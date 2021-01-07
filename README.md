@@ -1,10 +1,10 @@
 # Advanced Lane Finding
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-![Final Result](./output_videos/project_video.mp4)
+![Final Result](./output_videos/result_project_video.mp4)
 ---
 ## Objective
-This project aims to us identify and track lanes in more challenging highway scenarios (with lighting changes, color changes, shadows, underpasses) using a single camera mounted on the center of a vehicle.
+This project aims to identify and track lanes in more challenging highway scenarios (with lighting changes, color changes, shadows, underpasses) using a single camera mounted on the center of a vehicle.
 
 [//]: # (Image References)
 
