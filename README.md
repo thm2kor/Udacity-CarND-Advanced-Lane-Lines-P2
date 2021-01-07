@@ -10,12 +10,13 @@ This project aims to identify and track lanes in more challenging highway scenar
 
 [image1]: ./output_images/calibration2_corners.jpg "identified corners"
 [image2]: ./output_images/calibration2_undistorted.jpg "Undistored chessboard image"
-[image3]: ./output_images/test6_undistored.jpg.jpg "Undistored pipeline image"
+[image3]: ./output_images/test6_undistored.jpg "Undistored pipeline image"
 [image4]: ./output_images/straight_lines1_warped_cmp.jpg "Warped image - Straight road"
 [image5]: ./output_images/test6_warped_cmp.jpg "Warped image - Curved road"
 [image6]: ./output_images/results_gradient_thresholds.jpg "Gradient+S binary Performance"
 [image7]: ./output_images/results_color_thresholds.jpg "Color binary Performance"
 [video1]: ./output_videos/debug_result_project_video.mp4 "Debug mode - Project video"
+[video2]: ./output_videos/result_project_video.mp4 "Final - Project video"
 
 ---
 
@@ -34,20 +35,20 @@ This project aims to identify and track lanes in more challenging highway scenar
 The first step is the correction for the effect of image distortion. These distortions are caused by the angle of light and the position of the lens while capturing the image. The distortions changes the size and shapes of objects in an image. Calibration is a process which measures and corrects the distortion errors based on measurements from standard shapes. In this project, we use a chessboard to calibrate the camera. The regular high contrast pattern makes it an ideal candidate for calibrating a camera.
 
 ### Compute camera calibration matrix and distortion coefficients
-The project repository provided by Udacity contained a set of [calibration images](../camera_cal/) which were taken at different angles and distances. For each calibration image, the following steps were performed
+The project repository provided by Udacity contained a set of [calibration images](./camera_cal/) which were taken at different angles and distances. For each calibration image, the following steps were performed
 
 1. Identify the 3D real world points for each of the identified corners using the OpenCV function `cv2.findChessboardCorners( ... )`. These points are called **object points**
 2. The corresponding 2D coordinates of these points in the image are the locations where two black squares touch each other in the respective chess boards. These points are called **image points**.
 3. With the identified object points and image points, calibrate the camera using the function `cv2.calibrateCamera( ... )` which returns the **camera matrix and distortion coefficients**
-4. The object points, image points, camera matrix and distortion co-efficients for each image are converted to a byte stream and saved to a **[pickle file](../camera_cal/camera_distortion_pickle.p)**
+4. The object points, image points, camera matrix and distortion co-efficients for each image are converted to a byte stream and saved to a **[pickle file](./camera_cal/camera_distortion_pickle.p)**
 
-The above steps are implemented in the [calibrations.py](calibration.py) file. The results could be verified by running the following command from a conda environment:
+The above steps are implemented in the [calibrations.py](./calibration.py) file. The results could be verified by running the following command from a conda environment:
 
 ```sh
 $ python calibrations.py --corners
 ```
 
-For each calibration*.jpg file in the [calibration folder](../camera_cal/), a corresponding result file with the postfix *_corners.jpg* is created in the [output_images folder] (../output_images/). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting image with the identified corners. A sample output for one of the calibration image is shown below:
+For each calibration*.jpg file in the [calibration folder](./camera_cal/), a corresponding result file with the postfix *_corners.jpg* is created in the [output_images folder] (./output_images). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting image with the identified corners. A sample output for one of the calibration image is shown below:
 ![alt text][image1]
 
 As a side note, some of the chessboard images could not be calibrated because `cv2.findChessboardCorners` was unable to detect the desired number of internal corners.
