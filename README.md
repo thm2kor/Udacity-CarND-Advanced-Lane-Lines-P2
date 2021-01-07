@@ -136,13 +136,13 @@ def applyThresholds(self):
 ```
 
 ### Lane line detecting
-After identifying the edges on the warped images, the next step is to identify the potential lane lines from the image by plotting a histogram of the binary pixels on the warped, binary-thresholded image. This serves as a starting position for the lanes. I extensively re-used the code from the Lesson 8(Advanced Computer Vision). As suggested in the lesson, i defined a [`class line`](.\lanes.py) which represents the internal state of a lane line. In addition, i defined a [`class drivingLane`](./lanes.py) which encapsulates the detection of the left and right line, validation of the lines and filling of the lanes lines with a defined color.
+After identifying the edges on the warped images, the next step is to identify the potential lane lines from the image by plotting a histogram of the binary pixels on the warped, binary-thresholded image. This serves as a starting position for the lanes. I extensively re-used the code from the Lesson 8(Advanced Computer Vision). As suggested in the lesson, i defined a [`class line`](./lanes.py) which represents the internal state of a lane line. In addition, i defined a [`class drivingLane`](./lanes.py) which encapsulates the detection of the left and right line, validation of the lines and filling of the lanes lines with a defined color.
 
 1. The `track` (instance of `class drivingLane`) object reads in an image and instantiates one line class per detected line. 
 2. From the first image frame, the `track` objects uses the sliding windows method as discussed in Lesson 8 (Advanced Computer Vision :Finding the Lines: Sliding Window) to detect a set of points (X and Y) which could be a potential lane. 
 3. The detected points are fit to a second degree polynomial using the function `cv2.polyfit (x, y, 2)` and forwarded to the respective `line` object.
 4. The `line` object internally validates the recent fit and adds it to an array of line fit. 
-5. The `line` object calculates a `best_fit` based on the weighted average of the line fit array [10 elements]. The weights are determined by the count of the pixels which were used for the polyfit.
+5. The `line` object calculates a `best_fit` based on the weighted average of the line fit array (10 elements). The weights are determined by the count of the pixels which were used for the polyfit.
 
 A sample of laneline detection is shown in the below short video frame. The debug video could be prepared by running the following command:
 
@@ -208,7 +208,7 @@ self.vehicle_pos = (vehicle_position - lane_center) * self.xm_per_pix
 
 ---
 ### Pipeline video
-The link to the output videos could be found [here](.\output_videos). The pipeline worked reasonably well for [project_video.mp4](.\output_videos\result_project_video.mp4) and [project_video.mp4](.\output_videos\result_challenge_video.mp4). Whenever the vehicle comes out of a low contrast road, it wobbles, but recovers after few frames. This shows that my smoothing works well, though i could think of some better techniques for the next projects.
+The link to the output videos could be found [here](./output_videos). The pipeline worked reasonably well for [project_video.mp4](./output_videos/result_project_video.mp4) and [project_video.mp4](./output_videos/result_challenge_video.mp4). Whenever the vehicle comes out of a low contrast road, it wobbles, but recovers after few frames. This shows that my smoothing works well, though i could think of some better techniques for the next projects.
 
 ---
 
