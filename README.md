@@ -9,7 +9,7 @@ This project aims to identify and track lanes in more challenging highway scenar
 [//]: # (Image References)
 
 [image1]: ./output_images/calibration2_corners.jpg "identified corners"
-[image2]: ./output_images/calibration2_undistorted.jpg "Undistored chessboard image"
+[image2]: ./output_images/calibration2_undistored.jpg "Undistored chessboard image"
 [image3]: ./output_images/test6_undistored.jpg "Undistored pipeline image"
 [image4]: ./output_images/straight_lines1_warped_cmp.jpg "Warped image - Straight road"
 [image5]: ./output_images/test6_warped_cmp.jpg "Warped image - Curved road"
@@ -60,7 +60,7 @@ This step unpickles the camera matrix and distortion co-efficients from the prev
 $ python calibrations.py --undistort
 ```
 
-For each calibration*.jpg file in the [calibration folder](./camera_cal/), a corresponding result file with the postfix *_undistorted.jpg* is created in the [output_images folder] (../output_images/). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting undistorted image. A sample output for one of the calibration image is shown below:
+For each calibration*.jpg file in the [calibration folder](./camera_cal), a corresponding result file with the postfix *_undistorted.jpg* is created in the [output_images folder] (./output_images). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting undistorted image. A sample output for one of the calibration image is shown below:
 ![alt text][image2]
 
 ---
