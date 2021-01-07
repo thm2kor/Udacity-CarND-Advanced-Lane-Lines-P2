@@ -54,13 +54,13 @@ For each calibration*.jpg file in the [calibration folder](./camera_cal/), a cor
 As a side note, some of the chessboard images could not be calibrated because `cv2.findChessboardCorners` was unable to detect the desired number of internal corners.
 
 ### Apply distortion correction to raw images
-This step unpickles the camera matrix and distortion co-efficients from the previously cached **[pickle file](../camera_cal/camera_distortion_pickle.p)** . The raw images are calibrated using the openCV `cv2.undistort(image, mtx, dist, None, None)` function. The output could be verified by running the following command from a conda environment:
+This step unpickles the camera matrix and distortion co-efficients from the previously cached **[pickle file](./camera_cal/camera_distortion_pickle.p)** . The raw images are calibrated using the openCV `cv2.undistort(image, mtx, dist, None, None)` function. The output could be verified by running the following command from a conda environment:
 
 ```sh
 $ python calibrations.py --undistort
 ```
 
-For each calibration*.jpg file in the [calibration folder](../camera_cal/), a corresponding result file with the postfix *_undistorted.jpg* is created in the [output_images folder] (../output_images/). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting undistorted image. A sample output for one of the calibration image is shown below:
+For each calibration*.jpg file in the [calibration folder](./camera_cal/), a corresponding result file with the postfix *_undistorted.jpg* is created in the [output_images folder] (../output_images/). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting undistorted image. A sample output for one of the calibration image is shown below:
 ![alt text][image2]
 
 ---
@@ -76,7 +76,7 @@ The lane detection pipeline consists of the following stages:
 
 
 ### Distortion correction
-The calibration routines discussed in the previous chapter are encapsulated in the [`class cameraCalibration`](.\calibrations.py). A given image is undistorted by simply initializing a cameraCalibration object and a subsequent call to `cameraCalibration::undistort(filename)` function.
+The calibration routines discussed in the previous chapter are encapsulated in the [`class cameraCalibration`](./calibrations.py). A given image is undistorted by simply initializing a cameraCalibration object and a subsequent call to `cameraCalibration::undistort(filename)` function.
 The distortion correction on a given image can be executed by the following command:
 
 ```sh
@@ -95,7 +95,7 @@ Perspective transformation involves the following steps:
 5. To reverse the perspective transform, the `src` and `dst` points needs to be swapped to derive the the **MInv matrix**  using the `cv2.getPerspectiveTransform( ... )` function.
 6. A call to `cv2.warpPerspective ( ...)` with the `MInv` matrix unwarps the image
 
-The above steps are encapsulated in the [`class perspectiveTranform`](.\transforms.py). The perspective transformation on a given image can be performed by executing the following command:
+The above steps are encapsulated in the [`class perspectiveTranform`](./transforms.py). The perspective transformation on a given image can be performed by executing the following command:
 
 ```sh
 $ python transforms.py --warp=<RELATIVE_PATH_TO_IMAGE> --comp
@@ -117,7 +117,7 @@ For a robust performance under shadows and different lighting scenarios, I explo
 So i decided to do the binary thresholding only on Lab and Luv color spaces. The performance of the color thresholds showed good results:
 ![alt text][image7]
 
-The code for the binary thresholds are available in the [`class thresholdedImage`](.\thresholds.py) . The functions `luv_l_thresh` and `lab_b_thresh` extracts the l and b channels respectively, applies the given thresholds and returns the thresholded image. The function `applyThresholds` OR's the output from the two functions and returns the final binary thresholded image.
+The code for the binary thresholds are available in the [`class thresholdedImage`](./thresholds.py) . The functions `luv_l_thresh` and `lab_b_thresh` extracts the l and b channels respectively, applies the given thresholds and returns the thresholded image. The function `applyThresholds` OR's the output from the two functions and returns the final binary thresholded image.
 An extract of the code is shown below:
 ```python
 # Returns the binary image combining (OR) the binary thresholded l channel 
@@ -136,7 +136,7 @@ def applyThresholds(self):
 ```
 
 ### Lane line detecting
-After identifying the edges on the warped images, the next step is to identify the potential lane lines from the image by plotting a histogram of the binary pixels on the warped, binary-thresholded image. This serves as a starting position for the lanes. I extensively re-used the code from the Lesson 8(Advanced Computer Vision). As suggested in the lesson, i defined a [`class line`](.\lanes.py) which represents the internal state of a lane line. In addition, i defined a [`class drivingLane`](.\lanes.py) which encapsulates the detection of the left and right line, validation of the lines and filling of the lanes lines with a defined color.
+After identifying the edges on the warped images, the next step is to identify the potential lane lines from the image by plotting a histogram of the binary pixels on the warped, binary-thresholded image. This serves as a starting position for the lanes. I extensively re-used the code from the Lesson 8(Advanced Computer Vision). As suggested in the lesson, i defined a [`class line`](.\lanes.py) which represents the internal state of a lane line. In addition, i defined a [`class drivingLane`](./lanes.py) which encapsulates the detection of the left and right line, validation of the lines and filling of the lanes lines with a defined color.
 
 1. The `track` (instance of `class drivingLane`) object reads in an image and instantiates one line class per detected line. 
 2. From the first image frame, the `track` objects uses the sliding windows method as discussed in Lesson 8 (Advanced Computer Vision :Finding the Lines: Sliding Window) to detect a set of points (X and Y) which could be a potential lane. 
@@ -156,10 +156,10 @@ After the line is detected and validated, it is unwarped and overlayed back onto
 ```python
 cv2.warpPerspective(image, self.Minv, (image.shape[1], image.shape[0]), flags=cv2.INTER_LINEAR)
 ```
-The code for overlay is available in the module [lanes.py](.\lanes.py). The function `overlay_lanes` prepares a the set of x and y in stacked array and uses the function cv2.fillpoly to draw a closed region enclosing the x and y coordinates. In addition, the polynomial fitted lane lines are also drawn with a pre-defined thickness.
+The code for overlay is available in the module [lanes.py](./lanes.py). The function `overlay_lanes` prepares a the set of x and y in stacked array and uses the function cv2.fillpoly to draw a closed region enclosing the x and y coordinates. In addition, the polynomial fitted lane lines are also drawn with a pre-defined thickness.
 
 ### Calculating radius of curvature
-Since the radius of curvature is measured in world-space coordinates(metres), I had to normalize the lane dimensions to meters. For this, i took [one](.\test_images\straight_lines1_warped.jpg) of the warped straight line image as a reference and manually calculated the horizontal distance between 2 lanes lines and the vertical distance of a lane segment. This pixel sizes corresponded to the real-world values of 3.7m and 3 meters respectively. The `track` object initialize two variable in real-world space as below:
+Since the radius of curvature is measured in world-space coordinates(metres), I had to normalize the lane dimensions to meters. For this, i took [one](./test_images/straight_lines1_warped.jpg) of the warped straight line image as a reference and manually calculated the horizontal distance between 2 lanes lines and the vertical distance of a lane segment. This pixel sizes corresponded to the real-world values of 3.7m and 3 meters respectively. The `track` object initialize two variable in real-world space as below:
 
 ```python
 self.ym_per_pix = 3/110 	# 110 is the number of pixels for one lane segement in straight_line1_warped.jpg
