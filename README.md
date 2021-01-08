@@ -1,7 +1,7 @@
 # Advanced Lane Finding
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-![Final Result](./output_videos/result_project_video.mp4)
+![Final Result](./output_videos/result_project_video.gif)
 ---
 ## Objective
 This project aims to identify and track lanes in more challenging highway scenarios (with lighting changes, color changes, shadows, underpasses) using a single camera mounted on the center of a vehicle.
@@ -15,7 +15,7 @@ This project aims to identify and track lanes in more challenging highway scenar
 [image5]: ./output_images/test6_warped_cmp.jpg "Warped image - Curved road"
 [image6]: ./output_images/results_gradient_thresholds.jpg "Gradient+S binary Performance"
 [image7]: ./output_images/results_color_thresholds.jpg "Color binary Performance"
-[video1]: ./output_videos/debug_result_project_video.mp4 "Debug mode - Project video"
+[video1]: ./output_videos/debug_result_project_video.gif "Debug mode - Project video"
 [video2]: ./output_videos/result_project_video.mp4 "Final - Project video"
 
 ---
@@ -109,8 +109,8 @@ A sample transformation on a straight and curved road are shown below:
 ### Binary thresholding - Edge detection
 To efficiently extract the lane lines, several thresholding techniques were discussed in the Lesson 7: Gradient and color spaces.
 An explorative study on several combination of sobel gradient thresholds, magnitude thresholds, color thresholds in different color space like RGB, HSV, Luv and Lab were carried out.
-The standard combination of Sobel gradients and S-binary thresholds gave reasonably good results for detecting yellow and white lines. But they failed to detect the lines on roads with less contrast and scenarios with shadows. 
-The performance of the Sobel gradient and S-binary thresholds could be seen in the below picture. 
+The standard combination of Sobel gradients and S-binary thresholds gave reasonably good results for detecting yellow and white lines. But they failed to detect the lines on roads with less contrast and scenarios with shadows.
+The performance of the Sobel gradient and S-binary thresholds could be seen in the below picture.
 ![alt text][image6]
 
 For a robust performance under shadows and different lighting scenarios, I explored color spaces other than the HSV and HSL color space. I took help from the Udacity Mentor network. I got a [hint] (https://knowledge.udacity.com/questions/32588) that the b channel from Lab color space and l channel from Luv color space with a specific range of thresholds gave good results for yellow and white lines under normal lighting as well as under shadows and low contrast surfaces.
@@ -120,28 +120,28 @@ So i decided to do the binary thresholding only on Lab and Luv color spaces. The
 The code for the binary thresholds are available in the [`class thresholdedImage`](./thresholds.py) . The functions `luv_l_thresh` and `lab_b_thresh` extracts the l and b channels respectively, applies the given thresholds and returns the thresholded image. The function `applyThresholds` OR's the output from the two functions and returns the final binary thresholded image.
 An extract of the code is shown below:
 ```python
-# Returns the binary image combining (OR) the binary thresholded l channel 
+# Returns the binary image combining (OR) the binary thresholded l channel
 # from the Luv color space and b channel from Lab color space
 
 def applyThresholds(self):
 
     l_binary_output = self.luv_l_thresh(self.image)
     b_binary_output = self.lab_b_thresh(self.image)
-    
+
     # Combine Luv and Lab B color space channel thresholds
     combined = np.zeros_like(l_binary_output)
     combined[(l_binary_output == 1) | (b_binary_output == 1)] = 1
-    
+
     return combined
 ```
 
 ### Lane line detecting
 After identifying the edges on the warped images, the next step is to identify the potential lane lines from the image by plotting a histogram of the binary pixels on the warped, binary-thresholded image. This serves as a starting position for the lanes. I extensively re-used the code from the Lesson 8(Advanced Computer Vision). As suggested in the lesson, i defined a [`class line`](./lanes.py) which represents the internal state of a lane line. In addition, i defined a [`class drivingLane`](./lanes.py) which encapsulates the detection of the left and right line, validation of the lines and filling of the lanes lines with a defined color.
 
-1. The `track` (instance of `class drivingLane`) object reads in an image and instantiates one line class per detected line. 
-2. From the first image frame, the `track` objects uses the sliding windows method as discussed in Lesson 8 (Advanced Computer Vision :Finding the Lines: Sliding Window) to detect a set of points (X and Y) which could be a potential lane. 
+1. The `track` (instance of `class drivingLane`) object reads in an image and instantiates one line class per detected line.
+2. From the first image frame, the `track` objects uses the sliding windows method as discussed in Lesson 8 (Advanced Computer Vision :Finding the Lines: Sliding Window) to detect a set of points (X and Y) which could be a potential lane.
 3. The detected points are fit to a second degree polynomial using the function `cv2.polyfit (x, y, 2)` and forwarded to the respective `line` object.
-4. The `line` object internally validates the recent fit and adds it to an array of line fit. 
+4. The `line` object internally validates the recent fit and adds it to an array of line fit.
 5. The `line` object calculates a `best_fit` based on the weighted average of the line fit array (10 elements). The weights are determined by the count of the pixels which were used for the polyfit.
 
 A sample of laneline detection is shown in the below short video frame. The debug video could be prepared by running the following command:
@@ -167,10 +167,10 @@ self.xm_per_pix = 3.7/380	# 380 is number of pixels for one lane width in straig
 ```
 With the above normalization values, each lane calculates the radius of curvature by the following steps
 1. Normalize the y and x points by multiplying the values by ym_per_pix and xm_per_pix respectively
-2. Fit a second-degree ploynomial with the real-world values of y and x 
+2. Fit a second-degree ploynomial with the real-world values of y and x
 3. With the returned co-efficients , the radius of co-oefficient can be calculate with the formula:
 ```
-self.radius_of_curvature = ((1 + (2*fit_cr[0]*y_eval + fit_cr[1])**2)**1.5)/abs(2*fit_cr[0]) 
+self.radius_of_curvature = ((1 + (2*fit_cr[0]*y_eval + fit_cr[1])**2)**1.5)/abs(2*fit_cr[0])
 ```
 4. Since the measurement of radius of curvature is done closest to your vehicle, the `y_eval` value corresponding to the bottom of the image is used.
 
@@ -182,8 +182,8 @@ The following code explains the radius of curvature calculations:
         fit_cr = np.polyfit((self.ally * ym_per_pix), (self.allx * xm_per_pix), 2)
         #fit a second degree polynomial, which fits the current x and y points
         y_eval = np.max(ploty)*ym_per_pix
-        
-        self.radius_of_curvature = ((1 + (2*fit_cr[0]*y_eval + fit_cr[1])**2)**1.5)/abs(2*fit_cr[0]) 
+
+        self.radius_of_curvature = ((1 + (2*fit_cr[0]*y_eval + fit_cr[1])**2)**1.5)/abs(2*fit_cr[0])
         return self.radius_of_curvature
 ```
 ### Calculating vehicle position
@@ -198,9 +198,9 @@ vehicle_position = image_shape[1]/2
 leftline_intercept = self.leftline.best_fit[0]*image_shape[0]**2 + self.leftline.best_fit[1]*image_shape[0] + self.leftline.best_fit[2]
 rightline_intercept = self.rightline.best_fit[0]*image_shape[0]**2 + self.rightline.best_fit[1]*image_shape[0] + self.rightline.best_fit[2]
 lane_center = (leftline_intercept + rightline_intercept) /2
-        
+
 ```
-3. The vehicle's position from the center is calculated by taking the absolute value of the vehicle position minus the halfway point along the horizontal axis 
+3. The vehicle's position from the center is calculated by taking the absolute value of the vehicle position minus the halfway point along the horizontal axis
 ```python
 self.vehicle_pos = (vehicle_position - lane_center) * self.xm_per_pix
 ```
@@ -214,6 +214,6 @@ The link to the output videos could be found [here](./output_videos). The pipeli
 
 ### Discussion
 
-1. The biggest issue which i faced was the lack of intuition in configuring the thresholds for the images. I spent a lot of time to filter out the lane line in shadowy and low contrast surfaces. 
+1. The biggest issue which i faced was the lack of intuition in configuring the thresholds for the images. I spent a lot of time to filter out the lane line in shadowy and low contrast surfaces.
 2. As of now i am averaging the fits. Though I am doing a weighted average, it is still not good enough for curvy roads as seen in the 'harder-challenge.mp4'. The cv2.polyfit failed to return the co-oefficients for several streches in this video. I am experimenting with smaller src rectangle for the perspective transforms. For a reasonable rectangle, i would need to estimate the speed of the vehicle. Otherwise, my lanes would end up too short.
 3. I found the discussions in the Mentor help section quite useful. Many of my questions were already answered there. As i gain experience i look forward to contributing to this community.
