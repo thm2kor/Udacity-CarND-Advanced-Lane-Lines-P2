@@ -136,20 +136,21 @@ def applyThresholds(self):
 ```
 
 ### Lane line detecting
-After identifying the edges on the warped images, the next step is to identify the potential lane lines from the image by plotting a histogram of the binary pixels on the warped, binary-thresholded image. This serves as a starting position for the lanes. I extensively re-used the code from the Lesson 8(Advanced Computer Vision). As suggested in the lesson, i defined a [`class line`](./lanes.py) which represents the internal state of a lane line. In addition, i defined a [`class drivingLane`](./lanes.py) which encapsulates the detection of the left and right line, validation of the lines and filling of the lanes lines with a defined color.
+After identifying the edges on the warped images, the next step is to identify the potential lane lines from the image by plotting a histogram of the binary pixels on the warped, binary-thresholded image. This serves as a starting position for the lanes. I extensively re-used the code from the Lesson 8(Advanced Computer Vision). As suggested in the lesson, i defined a [`class line`](./lanes.py) which represents the internal state of a lane line. In addition, I defined a [`class drivingLane`](./lanes.py) which encapsulates the detection of the left and right line, validation of the lines and filling of the lanes lines with a defined color.
 
 1. The `track` (instance of `class drivingLane`) object reads in an image and instantiates one line class per detected line.
 2. From the first image frame, the `track` objects uses the sliding windows method as discussed in Lesson 8 (Advanced Computer Vision :Finding the Lines: Sliding Window) to detect a set of points (X and Y) which could be a potential lane.
 3. The detected points are fit to a second degree polynomial using the function `cv2.polyfit (x, y, 2)` and forwarded to the respective `line` object.
 4. The `line` object internally validates the recent fit and adds it to an array of line fit.
-5. The `line` object calculates a `best_fit` based on the weighted average of the line fit array (10 elements). The weights are determined by the count of the pixels which were used for the polyfit.
+5. The `line` object calculates a best-fit based on the weighted average of the line fit array (10 elements). The weights are determined by the count of the pixels which were used for the `cv2.polyfit`.
 
-A sample of laneline detection is shown in the below short video frame. The debug video could be prepared by running the following command:
+A sample of lane line detection is shown in the below short video frame. The debug video could be prepared by running the following command:
 
 ```sh
 $ python main.py test_images\project_video.mp4 --debug --timeslot=1-3
 ```
 ![alt text][video1]
+
 In the output frame, the lane pixels for the left line and right line could be identified by the blue and red colors. The fitted line is drawn with a green color.
 
 After the line is detected and validated, it is unwarped and overlayed back onto the original image using the function `cv2.warpPerspective`.
@@ -195,8 +196,8 @@ vehicle_position = image_shape[1]/2
 ```
 2. The center of the lane is calculated as the average of the left line and right line x-intercepts:
 ```python
-leftline_intercept = self.leftline.best_fit[0]*image_shape[0]**2 + self.leftline.best_fit[1]*image_shape[0] + self.leftline.best_fit[2]
-rightline_intercept = self.rightline.best_fit[0]*image_shape[0]**2 + self.rightline.best_fit[1]*image_shape[0] + self.rightline.best_fit[2]
+leftline_intercept = leftline.best_fit[0]*height**2 + leftline.best_fit[1]*height + leftline.best_fit[2]
+rightline_intercept = rightline.best_fit[0]*height**2 + rightline.best_fit[1]*height + rightline.best_fit[2]
 lane_center = (leftline_intercept + rightline_intercept) /2
 
 ```
