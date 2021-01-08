@@ -40,15 +40,15 @@ The project repository provided by Udacity contained a set of [calibration image
 1. Identify the 3D real world points for each of the identified corners using the OpenCV function `cv2.findChessboardCorners( ... )`. These points are called **object points**
 2. The corresponding 2D coordinates of these points in the image are the locations where two black squares touch each other in the respective chess boards. These points are called **image points**.
 3. With the identified object points and image points, calibrate the camera using the function `cv2.calibrateCamera( ... )` which returns the **camera matrix and distortion coefficients**
-4. The object points, image points, camera matrix and distortion co-efficients for each image are converted to a byte stream and saved to a **[pickle file](./camera_cal/camera_distortion_pickle.p)**
+4. The object points, image points, camera matrix and distortion coefficients for each image are converted to a byte stream and saved to a **[pickle file](./camera_cal/camera_distortion_pickle.p)**
 
-The above steps are implemented in the [calibrations.py](./calibration.py) file. The results could be verified by running the following command from a conda environment:
+The above steps are implemented in the [calibrations.py](./calibrations.py) file. The results could be verified by running the following command from a conda environment:
 
 ```sh
 $ python calibrations.py --corners
 ```
 
-For each calibration*.jpg file in the [calibration folder](./camera_cal/), a corresponding result file with the postfix *_corners.jpg* is created in the [output_images folder] (./output_images). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting image with the identified corners. A sample output for one of the calibration image is shown below:
+For each calibration*.jpg file in the [calibration folder](./camera_cal/), a corresponding result file with the postfix *_corners.jpg* is created in the [output_images folder](./output_images). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting image with the identified corners. A sample output for one of the calibration image is shown below:
 ![alt text][image1]
 
 As a side note, some of the chessboard images could not be calibrated because `cv2.findChessboardCorners` was unable to detect the desired number of internal corners.
@@ -60,7 +60,7 @@ This step unpickles the camera matrix and distortion co-efficients from the prev
 $ python calibrations.py --undistort
 ```
 
-For each calibration*.jpg file in the [calibration folder](./camera_cal), a corresponding result file with the postfix *_undistorted.jpg* is created in the [output_images folder] (./output_images). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting undistorted image. A sample output for one of the calibration image is shown below:
+For each calibration*.jpg file in the [calibration folder](./camera_cal), a corresponding result file with the postfix *_undistorted.jpg* is created in the [output_images folder](./output_images). The result files shows a side-by-side view of the original chessboard image with distortion and the resulting undistorted image. A sample output for one of the calibration image is shown below:
 ![alt text][image2]
 
 ---
@@ -113,7 +113,7 @@ The standard combination of Sobel gradients and S-binary thresholds gave reasona
 The performance of the Sobel gradient and S-binary thresholds could be seen in the below picture.
 ![alt text][image6]
 
-For a robust performance under shadows and different lighting scenarios, I explored color spaces other than the HSV and HSL color space. I took help from the Udacity Mentor network. I got a [hint] (https://knowledge.udacity.com/questions/32588) that the b channel from Lab color space and l channel from Luv color space with a specific range of thresholds gave good results for yellow and white lines under normal lighting as well as under shadows and low contrast surfaces.
+For a robust performance under shadows and different lighting scenarios, I explored color spaces other than the HSV and HSL color space. I took help from the Udacity Mentor network. I got a [hint](https://knowledge.udacity.com/questions/32588) that the b channel from Lab color space and l channel from Luv color space with a specific range of thresholds gave good results for yellow and white lines under normal lighting as well as under shadows and low contrast surfaces.
 So i decided to do the binary thresholding only on Lab and Luv color spaces. The performance of the color thresholds showed good results:
 ![alt text][image7]
 
@@ -162,13 +162,13 @@ The code for overlay is available in the module [lanes.py](./lanes.py). The func
 Since the radius of curvature is measured in world-space coordinates(metres), I had to normalize the lane dimensions to meters. For this, i took [one](./test_images/straight_lines1_warped.jpg) of the warped straight line image as a reference and manually calculated the horizontal distance between 2 lanes lines and the vertical distance of a lane segment. This pixel sizes corresponded to the real-world values of 3.7m and 3 meters respectively. The `track` object initialize two variable in real-world space as below:
 
 ```python
-self.ym_per_pix = 3/110 	# 110 is the number of pixels for one lane segement in straight_line1_warped.jpg
-self.xm_per_pix = 3.7/380	# 380 is number of pixels for one lane width in straight_line1_warped.jpg
+self.ym_per_pix = 3/110 # 110 is the number of pixels for 1 lane segement in straight_line1_warped.jpg
+self.xm_per_pix = 3.7/380	# 380 is number of pixels for 1 lane width in straight_line1_warped.jpg
 ```
 With the above normalization values, each lane calculates the radius of curvature by the following steps
 1. Normalize the y and x points by multiplying the values by ym_per_pix and xm_per_pix respectively
-2. Fit a second-degree ploynomial with the real-world values of y and x
-3. With the returned co-efficients , the radius of co-oefficient can be calculate with the formula:
+2. Fit a second-degree polynomial with the real-world values of y and x
+3. With the returned coefficients , the radius of coefficient can be calculate with the formula:
 ```
 self.radius_of_curvature = ((1 + (2*fit_cr[0]*y_eval + fit_cr[1])**2)**1.5)/abs(2*fit_cr[0])
 ```
@@ -211,9 +211,3 @@ self.vehicle_pos = (vehicle_position - lane_center) * self.xm_per_pix
 The link to the output videos could be found [here](./output_videos). The pipeline worked reasonably well for [project_video.mp4](./output_videos/result_project_video.mp4) and [project_video.mp4](./output_videos/result_challenge_video.mp4). Whenever the vehicle comes out of a low contrast road, it wobbles, but recovers after few frames. This shows that my smoothing works well, though i could think of some better techniques for the next projects.
 
 ---
-
-### Discussion
-
-1. The biggest issue which i faced was the lack of intuition in configuring the thresholds for the images. I spent a lot of time to filter out the lane line in shadowy and low contrast surfaces.
-2. As of now i am averaging the fits. Though I am doing a weighted average, it is still not good enough for curvy roads as seen in the 'harder-challenge.mp4'. The cv2.polyfit failed to return the co-oefficients for several streches in this video. I am experimenting with smaller src rectangle for the perspective transforms. For a reasonable rectangle, i would need to estimate the speed of the vehicle. Otherwise, my lanes would end up too short.
-3. I found the discussions in the Mentor help section quite useful. Many of my questions were already answered there. As i gain experience i look forward to contributing to this community.
