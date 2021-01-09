@@ -12,17 +12,29 @@ pickle_file_path = 'camera_cal/camera_distortion_pickle.p'
 class thresholdedImage:
     def __init__(self, image):
         self.image = image
-    
-        self.b = np.zeros((image.shape[0],image.shape[1]))
+        #preprocessing the images through a brightness adjustment filter 
+        #using a Contrast Limited Adaptive Histogram Equalization (CLAHE) 
+        #algorithm. This will help to better detect the yellow lane line road 
+        #markers that have over-cast shadows in the original image for 
+        #subsequent steps (e.g. getting a binary threshold color mask for 
+        #yellow and white lane lines).
+        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+        lab_planes = cv2.split(lab)
+        _clahe = cv2.createCLAHE(clipLimit=2.0,tileGridSize=(8,8))
+        lab_planes[0] = _clahe.apply(lab_planes[0])
+        lab = cv2.merge(lab_planes)
+        self.image_clahe = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
         
-        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        self.b = np.zeros((self.image_clahe.shape[0],self.image_clahe.shape[1]))
+        
+        hsv = cv2.cvtColor(self.image_clahe, cv2.COLOR_RGB2HSV)
         H = hsv[:,:,0]
         S = hsv[:,:,1]
         V = hsv[:,:,2]
-    
-        R = image[:,:,0]
-        G = image[:,:,1]
-        B = image[:,:,2]
+        
+        R = self.image_clahe[:,:,0]
+        G = self.image_clahe[:,:,1]
+        B = self.image_clahe[:,:,2]
     
         t_yellow_H = self.thresh(H,10,30)
         t_yellow_S = self.thresh(S,50,255)
@@ -32,7 +44,7 @@ class thresholdedImage:
         t_white_V = self.thresh(V,230,255)
     
         self.b[(t_yellow_H==1) & (t_yellow_S==1) & (t_yellow_V==1)] = 1
-        self.b[(t_white_R==1)|(t_white_V==1)] = 1
+        self.b[(t_white_R==1)|(t_white_V==1)] = 1        
     
     def thresh(self, image, thresh_min, thresh_max):
         ret = np.zeros_like(image)
@@ -71,12 +83,12 @@ class thresholdedImage:
     # space
     def applyThresholds(self):
 
-        #l_binary_output = self.luv_l_thresh(self.image)
-        #b_binary_output = self.lab_b_thresh(self.image)
+        l_binary_output = self.luv_l_thresh(self.image)
+        b_binary_output = self.lab_b_thresh(self.image)
         
         # Combine Luv and Lab B color space channel thresholds
-        #combined = np.zeros_like(l_binary_output)
-        #combined[(l_binary_output == 1) | (b_binary_output == 1)] = 1
+        self.combined = np.zeros_like(l_binary_output)
+        self.combined[(l_binary_output == 1) | (b_binary_output == 1)] = 1
         
         #return combined
         return self.b

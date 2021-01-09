@@ -31,32 +31,33 @@ class pipeline:
 
     #Pipeline for Lane processing
     def __call__(self, image, mode=0):
-        distorted = np.copy(image)
+        self.distorted = np.copy(image)
         #Undistort the given image
-        ret, undistorted = self.cc.undistort(distorted)
+        ret, undistorted = self.cc.undistort(self.distorted)
         #apply perspective transform to the undistorted image
         self.warped = self.pt.warp(undistorted)
         #color threshold the frames to filter the lane lines
-        binary = thresholdedImage(self.warped)
-        self.edges = binary.applyThresholds()
+        self.binary = thresholdedImage(self.warped)
+        self.edges = self.binary.applyThresholds()
         #find the lines based on the detected edges
-        #self.track.detect_lines(self.edges)
+        self.track.detect_lines(self.edges)
         #overlay the tracks on the distorted image
-        #filled_track = self.track.overlay_lanes(distorted, self.edges)
+        filled_track = self.track.overlay_lanes(self.distorted, self.edges)
         #unwarp the combined image        
         if config.debug_mode == True and mode == 0:#1= video mode
-            result = self.show_debug_info(self.edges)
+            #result = self.show_debug_info(self.edges)
+            result = self.prepare_side_by_side()
             #in the debug mode, only return edges and the line fits
             #TODO: Update the texts in white fonts
             return result
         else:
-            #unwarp = self.pt.unwarp(filled_track)
+            unwarp = self.pt.unwarp(filled_track)
             #Combine the result with the original image
-            #result = cv2.addWeighted(distorted, 1, unwarp, 0.5, 0)
+            result = cv2.addWeighted(self.distorted, 1, unwarp, 0.5, 0)
             #display the curve radius and position
-            #result = self.add_header(result)
+            result = self.add_header(result)
             #return result
-            result = self.show_debug_info(self.edges)
+            #result = self.show_debug_info(self.edges)
             return result
     
     #Adds the calculated radius of curvature and vehicle position on the video frames
@@ -106,6 +107,22 @@ class pipeline:
         
         return debug_bin_points
     
+    def prepare_side_by_side(self, width=1280, height=720):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        result = np.zeros((int(height/2), width, 3), dtype=np.uint8)
+        edges_bin = np.dstack((self.edges*255, self.edges*255, self.edges*255))
+        combined_bin = np.dstack((self.binary.combined*255, self.binary.combined*255, self.binary.combined*255))
+        
+        result[0:int(height/2), 0:int(width/2), : ] = cv2.resize( edges_bin, (int(width/2) ,int(height/2)))
+        text = 'Edges detected with CLAHE preprocessing + thresholding HSV and RGB'
+        cv2.putText(result, text, (50,40), font, 0.5, (0,255,0), 2, cv2.LINE_AA)
+        
+        result[0:int(height/2), int(width/2):width, :] = cv2.resize( combined_bin, (int(width/2) ,int(height/2)))
+        text = 'Edges detected with combined results from Luv(l) and Lab(b)'
+        cv2.putText(result, text, (int((width/2)+50),40), font, 0.5, (0,255,0), 2, cv2.LINE_AA)
+        
+        return result
+        
     #Helper function for debug info - draws a given line on to an image
     def draw_lines_on_image(self, image, fit, plot_color, thickness=5):
         if fit is None:
@@ -122,6 +139,7 @@ class pipeline:
 def processVideo(filename, start, end):
     clip = VideoFileClip(filename)
     if config.debug_mode:
+        print('processing input video from ' + str(start) + ' to ' + str(end) + ' seconds')
         clip = clip.subclip(start,end)
     snapshot = clip.fl_image(pipeline() ) 
     
