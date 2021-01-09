@@ -40,9 +40,9 @@ class pipeline:
         binary = thresholdedImage(self.warped)
         self.edges = binary.applyThresholds()
         #find the lines based on the detected edges
-        self.track.detect_lines(self.edges)
+        #self.track.detect_lines(self.edges)
         #overlay the tracks on the distorted image
-        filled_track = self.track.overlay_lanes(distorted, self.edges)
+        #filled_track = self.track.overlay_lanes(distorted, self.edges)
         #unwarp the combined image        
         if config.debug_mode == True and mode == 0:#1= video mode
             result = self.show_debug_info(self.edges)
@@ -50,12 +50,13 @@ class pipeline:
             #TODO: Update the texts in white fonts
             return result
         else:
-            unwarp = self.pt.unwarp(filled_track)
+            #unwarp = self.pt.unwarp(filled_track)
             #Combine the result with the original image
-            result = cv2.addWeighted(distorted, 1, unwarp, 0.5, 0)
+            #result = cv2.addWeighted(distorted, 1, unwarp, 0.5, 0)
             #display the curve radius and position
-            result = self.add_header(result)
+            #result = self.add_header(result)
             #return result
+            result = self.show_debug_info(self.edges)
             return result
     
     #Adds the calculated radius of curvature and vehicle position on the video frames

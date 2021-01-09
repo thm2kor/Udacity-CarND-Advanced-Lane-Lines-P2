@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import glob
 import config
-import pickle
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
@@ -14,6 +13,32 @@ class thresholdedImage:
     def __init__(self, image):
         self.image = image
     
+        self.b = np.zeros((image.shape[0],image.shape[1]))
+        
+        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        H = hsv[:,:,0]
+        S = hsv[:,:,1]
+        V = hsv[:,:,2]
+    
+        R = image[:,:,0]
+        G = image[:,:,1]
+        B = image[:,:,2]
+    
+        t_yellow_H = self.thresh(H,10,30)
+        t_yellow_S = self.thresh(S,50,255)
+        t_yellow_V = self.thresh(V,150,255)
+    
+        t_white_R = self.thresh(R,225,255)
+        t_white_V = self.thresh(V,230,255)
+    
+        self.b[(t_yellow_H==1) & (t_yellow_S==1) & (t_yellow_V==1)] = 1
+        self.b[(t_white_R==1)|(t_white_V==1)] = 1
+    
+    def thresh(self, image, thresh_min, thresh_max):
+        ret = np.zeros_like(image)
+        ret[(image >= thresh_min) & (image <= thresh_max)] = 1
+        return ret
+
     # Thresholds derived from the knowledge article
     # https://knowledge.udacity.com/questions/32588
     # Apply the given thresholds to the l channel of the Luv color space
@@ -46,14 +71,15 @@ class thresholdedImage:
     # space
     def applyThresholds(self):
 
-        l_binary_output = self.luv_l_thresh(self.image)
-        b_binary_output = self.lab_b_thresh(self.image)
+        #l_binary_output = self.luv_l_thresh(self.image)
+        #b_binary_output = self.lab_b_thresh(self.image)
         
         # Combine Luv and Lab B color space channel thresholds
-        combined = np.zeros_like(l_binary_output)
-        combined[(l_binary_output == 1) | (b_binary_output == 1)] = 1
+        #combined = np.zeros_like(l_binary_output)
+        #combined[(l_binary_output == 1) | (b_binary_output == 1)] = 1
         
-        return combined
+        #return combined
+        return self.b
     
 ## The following functions are only for investigation purposes. This was used for the explorative
 ## to identify the best possible thresholds
