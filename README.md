@@ -171,7 +171,7 @@ self.xm_per_pix = 3.7/380	# 380 is number of pixels for 1 lane width in straight
 With the above normalization values, each lane calculates the radius of curvature by the following steps
 1. Normalize the y and x points by multiplying the values by ym_per_pix and xm_per_pix respectively
 2. Fit a second-degree polynomial with the real-world values of y and x
-3. With the returned coefficients , the radius of coefficient can be calculate with the formula:<img src="https://render.githubusercontent.com/render/math?math=\large Radius_{curve}=\frac{(1%2B({2Ay}%2B{B})^2)^3/_2}{|2A|}">
+3. With the returned coefficients (A & B), the radius of coefficient can be calculate with the formula:<img src="https://render.githubusercontent.com/render/math?math=\large Radius_{curve}=\frac{\Bigg( 1%2B({2Ay}%2B{B})^2\Bigg)^3/_2}{|2A|}">
 
 4. Since the measurement of radius of curvature is done closest to your vehicle, the `y_eval` value corresponding to the bottom of the image is used.
 
