@@ -17,6 +17,7 @@ This project aims to identify and track lanes in more challenging highway scenar
 [image7]: ./output_images/results_color_thresholds.jpg "Color binary Performance"
 [video1]: ./output_videos/debug_result_project_video.gif "Debug mode - Project video"
 [video2]: ./output_videos/result_project_video.mp4 "Final - Project video"
+[image8]: ./output_images/signs_vehicles_xygrad_undistored.jpg "Undistored pipeline image"
 
 ---
 
@@ -54,7 +55,7 @@ For each calibration*.jpg file in the [calibration folder](./camera_cal/), a cor
 As a side note, some of the chessboard images could not be calibrated because `cv2.findChessboardCorners` was unable to detect the desired number of internal corners.
 
 ### Apply distortion correction to raw images
-This step unpickles the camera matrix and distortion co-efficients from the previously cached **[pickle file](./camera_cal/camera_distortion_pickle.p)** . The raw images are calibrated using the openCV `cv2.undistort(image, mtx, dist, None, None)` function. The output could be verified by running the following command from a conda environment:
+This step unpickles the camera matrix and distortion coefficients from the previously cached **[pickle file](./camera_cal/camera_distortion_pickle.p)** . The raw images are calibrated using the openCV `cv2.undistort(image, mtx, dist, None, None)` function. The output could be verified by running the following command from a conda environment:
 
 ```sh
 $ python calibrations.py --undistort
@@ -82,8 +83,9 @@ The distortion correction on a given image can be executed by the following comm
 ```sh
 $ python calibrations.py --filename=<RELATIVE_PATH_TO_IMAGE>
 ```
-An example calibration by `python calibrations.py --filename=test_images\test6.jpg` gives the following result:
-![alt text][image3]
+An example calibration by `python calibrations.py --filename=test_images\signs_vehicles_xygrad.png` gives the following result:
+![alt text][image8]
+
 
 ### Perspective transformation
 The undistorted image seen above exhibits the so-called *perspective phenomenon* where objects farther on the road appears smaller and parallel lines seem to converge to a point. Perspective transform is the step which warps an image by transforming the apparent z-coordinates of the object points. This effectively adapts the objects 2D representation.
