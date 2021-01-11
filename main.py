@@ -72,7 +72,7 @@ class pipeline:
         #cv2.putText(result, text, (50, 120), font, 1.0, (255,255,255), 2, cv2.LINE_AA)
         #text = 'Radius of curvature: R ' + '{:05.2f}'.format(self.track.rightline.radius_of_curvature) + 'm'
         #cv2.putText(result, text, (50, 170), font, 1.0, (255,255,255), 2, cv2.LINE_AA)
-
+        direction = ''
         if position > 0:
             direction = 'right of center'
         else:
@@ -96,7 +96,7 @@ class pipeline:
             debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (20*i+100,0,20*i+100), 3)
         for i, fit in enumerate(self.track.rightline.current_fit):
             debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (0, 20*i+100, 20*i+100), 3)
-        
+
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.leftline.best_fit, (255,0,0))
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.rightline.best_fit, (0,0,255))
 
