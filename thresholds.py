@@ -60,6 +60,7 @@ class thresholdedImage:
     def getHistogram(self):
         binary = self.result
         self.histogram = np.zeros_like((self.result))
+        self.histogram = np.dstack((self.histogram*255,self.histogram*255,self.histogram*255))
         # Grab only the bottom half of the image
         # Lane lines are likely to be mostly vertical nearest to the car
         bottom_half = binary[binary.shape[0]//2:,:]
@@ -72,7 +73,7 @@ class thresholdedImage:
         histogram_x = np.arange(xsize).astype(int)
         #prepare the point for polylines
         points = np.vstack((histogram_x, histogram_y)).T
-        cv2.polylines(self.histogram, np.int32([points]), 0, (255,255,255), 5)
+        cv2.polylines(self.histogram, np.int32([points]), 0, (0,255,0), 5)
         return self.histogram
 
     #Alternate approach  suggested by reviewer

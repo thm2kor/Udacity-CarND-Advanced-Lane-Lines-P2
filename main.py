@@ -96,11 +96,54 @@ class pipeline:
             debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (20*i+100,0,20*i+100), 3)
         for i, fit in enumerate(self.track.rightline.current_fit):
             debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (0, 20*i+100, 20*i+100), 3)
-
-        debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.leftline.best_fit, (0,255,0))
-        debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.rightline.best_fit, (0,255,0))
+        
+        debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.leftline.best_fit, (255,0,0))
+        debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.rightline.best_fit, (0,0,255))
 
         return debug_bin_points
+
+    #Prints the debug texts. The location x and y for the cv2.putText are hard-coded
+    #to the bottom left quadrant.
+    def prepare_diag_texts(self , diagnose):
+        font = cv2.FONT_HERSHEY_DUPLEX
+        if self.track.leftline.recent_fit is not None:
+            text = 'Recent fit L: ' + ' {:0.6f}'.format(self.track.leftline.recent_fit[0]) + \
+                                    ' {:0.6f}'.format(self.track.leftline.recent_fit[1]) + \
+                                    ' {:0.6f}'.format(self.track.leftline.recent_fit[2])
+        else:
+            text = 'Incoming fit L: None'
+        cv2.putText(diagnose, text, (40,380), font, .4, (200,255,155), 1, cv2.LINE_AA)
+        if self.track.rightline.recent_fit is not None:
+            text = 'Recent fit R: ' + ' {:0.6f}'.format(self.track.rightline.recent_fit[0]) + \
+                                ' {:0.6f}'.format(self.track.rightline.recent_fit[1]) + \
+                                ' {:0.6f}'.format(self.track.rightline.recent_fit[2])
+        else:
+            text = 'Incoming fit R: None'
+        cv2.putText(diagnose, text, (40,400), font, .4, (200,255,155), 1, cv2.LINE_AA)
+        text = 'Best Fit L: ' + ' {:0.6f}'.format(self.track.leftline.best_fit[0]) + \
+                                ' {:0.6f}'.format(self.track.leftline.best_fit[1]) + \
+                                ' {:0.6f}'.format(self.track.leftline.best_fit[2])
+        cv2.putText(diagnose, text, (40,440), font, .4, (200,255,155), 1, cv2.LINE_AA)
+        text = 'Best Fit R: ' + ' {:0.6f}'.format(self.track.rightline.best_fit[0]) + \
+                                ' {:0.6f}'.format(self.track.rightline.best_fit[1]) + \
+                                ' {:0.6f}'.format(self.track.rightline.best_fit[2])
+        cv2.putText(diagnose, text, (40,460), font, .4, (200,255,155), 1, cv2.LINE_AA)
+
+        for i, fit in enumerate(self.track.leftline.current_fit):
+            text = 'Prev fits L: ' + ' {:d}'.format(i) + \
+                                    ' {:0.6f}'.format(fit[0]) + \
+                                    ' {:0.6f}'.format(fit[1]) + \
+                                    ' {:0.4f}'.format(fit[2])
+            cv2.putText(diagnose, text, (40,480+(20*(i+1))), font, .4, (200,255,155), 1, cv2.LINE_AA)
+
+        for i, fit in enumerate(self.track.rightline.current_fit):
+            text = 'Prev fits R: ' + ' {:d}'.format(i) + \
+                                    ' {:0.6f}'.format(fit[0]) + \
+                                    ' {:0.6f}'.format(fit[1]) + \
+                                    ' {:0.4f}'.format(fit[2])
+
+            cv2.putText(diagnose, text, (360,480+(20*(i+1))), font, .4, (200,255,155), 1, cv2.LINE_AA)
+        return diagnose
 
     def prepare_debug_windows(self, width=1280, height=720):
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -109,8 +152,9 @@ class pipeline:
         #prepare the edges for displaying in debug window
         edges_bin = np.dstack((self.edges*255, self.edges*255, self.edges*255))
         #prepare the histogram for displaying in debug window
-        histogram = self.binary.getHistogram()
-        hist_bin = np.dstack((histogram, histogram, histogram))
+        hist_bin = self.binary.getHistogram()
+        #combine the edges and histogram in a single quadrant
+        edges_bin = cv2.bitwise_or(edges_bin, hist_bin)
         #prepare the line fits for debug purposes
         fits_bin = self.prepare_fits_debug(self.edges)
         #Position the result in the TOP LEFT window
@@ -118,9 +162,9 @@ class pipeline:
         #Position the edges in the TOP RIGHT window
         result[0:int(height/2), int(width/2):width, :] = cv2.resize( edges_bin, (int(width/2) ,int(height/2)))
         #Position the histogram in the BOTTOM RIGHT window
-        result[int(height/2):height, int(width/2):width, :] = cv2.resize( hist_bin, (int(width/2) ,int(height/2)))
+        result[int(height/2):height, int(width/2):width, :] = cv2.resize( fits_bin, (int(width/2) ,int(height/2)))
         #BOTTOM LEFT is empty
-        result[int(height/2):height, 0:int(width/2), :] = cv2.resize( fits_bin, (int(width/2) ,int(height/2)))
+        self.prepare_diag_texts(result)
 
         return result
 
