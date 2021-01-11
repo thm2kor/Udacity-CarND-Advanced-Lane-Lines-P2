@@ -31,32 +31,23 @@ class pipeline:
 
     #Pipeline for Lane processing
     def __call__(self, image, mode=0):
-        distorted = np.copy(image)
+        self.distorted = np.copy(image)
         #Undistort the given image
-        ret, undistorted = self.cc.undistort(distorted)
+        ret, undistorted = self.cc.undistort(self.distorted)
         #apply perspective transform to the undistorted image
         self.warped = self.pt.warp(undistorted)
         #color threshold the frames to filter the lane lines
-        binary = thresholdedImage(self.warped)
-        self.edges = binary.applyThresholds()
+        self.binary = thresholdedImage(self.warped)
+        self.edges = self.binary.applyThresholds()
         #find the lines based on the detected edges
         self.track.detect_lines(self.edges)
         #overlay the tracks on the distorted image
         filled_track = self.track.overlay_lanes(distorted, self.edges)
         #unwarp the combined image
         if config.debug_mode == True and mode == 0:#1= video mode
-            result = self.show_debug_info(self.edges)
-            #in the debug mode, only return edges and the line fits
-            #TODO: Update the texts in white fonts
-            return result
-        else:
-            unwarp = self.pt.unwarp(filled_track)
-            #Combine the result with the original image
-            result = cv2.addWeighted(distorted, 1, unwarp, 0.5, 0)
-            #display the curve radius and position
-            result = self.add_header(result)
-            #return result
-            return result
+            self.result = self.prepare_debug_windows()
+        #end of pipeline.
+        return self.result
 
     #Adds the calculated radius of curvature and vehicle position on the video frames
     def add_header(self, image):
@@ -86,24 +77,46 @@ class pipeline:
         return result
 
     ##Functions which draws the left and right line fits on the edges
-    def show_debug_info(self, edges):
+    def prepare_fits_debug(self, edges):
         debug_bin = np.dstack((edges*255, edges*255, edges*255))
 
         # overhead with all fits added (bottom right)
         debug_bin_points = np.copy(debug_bin)
-
-        debug_bin_points[self.track.leftline.ally, self.track.leftline.allx] = [255, 0, 0]
-        debug_bin_points[self.track.rightline.ally, self.track.rightline.allx] = [0, 0, 255]
+        #Uncomment the below lines if the x and y lane points needs to be shown in debugg window
+        #debug_bin_points[self.track.leftline.ally, self.track.leftline.allx] = [255, 0, 0]
+        #debug_bin_points[self.track.rightline.ally, self.track.rightline.allx] = [0, 0, 255]
 
         for i, fit in enumerate(self.track.leftline.current_fit):
-            debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (155,0, 0), 3)
+            debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (20*i+100,0,20*i+100), 3)
         for i, fit in enumerate(self.track.rightline.current_fit):
-            debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (0, 0, 155), 3)
+            debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (0, 20*i+100, 20*i+100), 3)
 
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.leftline.best_fit, (0,255,0))
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.rightline.best_fit, (0,255,0))
 
         return debug_bin_points
+
+    def prepare_debug_windows(self, width=1280, height=720):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        result = np.zeros((height, width, 3))
+
+        #prepare the edges for displaying in debug window
+        edges_bin = np.dstack((self.edges*255, self.edges*255, self.edges*255))
+        #prepare the histogram for displaying in debug window
+        histogram = self.binary.getHistogram()
+        hist_bin = np.dstack((histogram, histogram, histogram))
+        #prepare the line fits for debug purposes
+        fits_bin = self.prepare_fits_debug(self.edges)
+        #Position the result in the TOP LEFT window
+        result[0:int(height/2), 0:int(width/2), : ] = cv2.resize( self.result, (int(width/2) ,int(height/2)))
+        #Position the edges in the TOP RIGHT window
+        result[0:int(height/2), int(width/2):width, :] = cv2.resize( edges_bin, (int(width/2) ,int(height/2)))
+        #Position the histogram in the BOTTOM RIGHT window
+        result[int(height/2):height, int(width/2):width, :] = cv2.resize( hist_bin, (int(width/2) ,int(height/2)))
+        #BOTTOM LEFT is empty
+        result[int(height/2):height, 0:int(width/2), :] = cv2.resize( fits_bin, (int(width/2) ,int(height/2)))
+
+        return result
 
     #Helper function for debug info - draws a given line on to an image
     def draw_lines_on_image(self, image, fit, plot_color, thickness=5):
@@ -121,6 +134,7 @@ class pipeline:
 def processVideo(filename, start, end):
     clip = VideoFileClip(filename)
     if start > 0 and end > 0:
+        print('processing input video from ' + str(start) + ' to ' + str(end) + ' seconds')
         clip = clip.subclip(start,end)
     snapshot = clip.fl_image(pipeline() )
 

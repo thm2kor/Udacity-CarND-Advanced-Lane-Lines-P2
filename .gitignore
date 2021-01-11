@@ -1,2 +1,3 @@
-__pycache__/*.*
-output_videos/debug_result_harder_challenge_video.mp4
+__pycache__/
+output_videos/
+output_images/
