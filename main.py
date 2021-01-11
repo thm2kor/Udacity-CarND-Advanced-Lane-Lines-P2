@@ -48,7 +48,7 @@ class pipeline:
         #Combine the result with the original image
         self.result = cv2.addWeighted(self.original, 1, unwarp, 0.5, 0)
         #Calculate and display the curve radius and distance to the center of vehicle
-        self.result = self.add_header(self.result)
+        self.result = self.appendHeader(self.result)
         #Prepare the debug window
         if config.debug_mode == True and mode == 0:#1= video mode
             self.result = self.prepare_debug_windows()
@@ -56,7 +56,7 @@ class pipeline:
         return self.result
 
     #Adds the calculated radius of curvature and vehicle position on the video frames
-    def add_header(self, image):
+    def appendHeader(self, image):
         result = np.copy(image)
         font = cv2.FONT_HERSHEY_SIMPLEX
 
