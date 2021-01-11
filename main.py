@@ -46,9 +46,9 @@ class pipeline:
         #unwarp the combined image
         unwarp = self.pt.unwarp(filled_track)
         #Combine the result with the original image
-        result = cv2.addWeighted(self.original, 1, unwarp, 0.5, 0)
+        self.result = cv2.addWeighted(self.original, 1, unwarp, 0.5, 0)
         #Calculate and display the curve radius and distance to the center of vehicle
-        result = self.add_header(result)
+        self.result = self.add_header(self.result)
         #Prepare the debug window
         if config.debug_mode == True and mode == 0:#1= video mode
             self.result = self.prepare_debug_windows()
