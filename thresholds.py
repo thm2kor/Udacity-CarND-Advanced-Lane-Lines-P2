@@ -12,45 +12,6 @@ pickle_file_path = 'camera_cal/camera_distortion_pickle.p'
 class thresholdedImage:
     def __init__(self, image):
         self.image = image
-        #preprocessing the images through a brightness adjustment filter
-        #using a Contrast Limited Adaptive Histogram Equalization (CLAHE)
-        #algorithm. This will help to better detect the yellow lane line road
-        #markers that have over-cast shadows in the original image for
-        #subsequent steps (e.g. getting a binary threshold color mask for
-        #yellow and white lane lines).
-        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
-        lab_planes = cv2.split(lab)
-        _clahe = cv2.createCLAHE(clipLimit=2.0,tileGridSize=(8,8))
-        lab_planes[0] = _clahe.apply(lab_planes[0])
-        lab = cv2.merge(lab_planes)
-        self.image_clahe = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
-
-        self.result = np.zeros((self.image_clahe.shape[0],self.image_clahe.shape[1]))
-
-        hsv = cv2.cvtColor(self.image_clahe, cv2.COLOR_RGB2HSV)
-        H = hsv[:,:,0]
-        S = hsv[:,:,1]
-        V = hsv[:,:,2]
-
-        R = self.image_clahe[:,:,0]
-        G = self.image_clahe[:,:,1]
-        B = self.image_clahe[:,:,2]
-
-        t_yellow_H = self.thresh(H,10,30)
-        t_yellow_S = self.thresh(S,50,255)
-        t_yellow_V = self.thresh(V,150,255)
-
-        t_white_R = self.thresh(R,225,255)
-        t_white_V = self.thresh(V,230,255)
-
-        self.result[(t_yellow_H==1) & (t_yellow_S==1) & (t_yellow_V==1)] = 1
-        self.result[(t_white_R==1)|(t_white_V==1)] = 1
-
-
-    def thresh(self, image, thresh_min, thresh_max):
-        ret = np.zeros_like(image)
-        ret[(image >= thresh_min) & (image <= thresh_max)] = 1
-        return ret
 
     # Thresholds derived from the knowledge article
     # https://knowledge.udacity.com/questions/32588
@@ -91,7 +52,8 @@ class thresholdedImage:
         self.result = np.zeros_like(l_binary_output)
         self.result[(l_binary_output == 1) | (b_binary_output == 1)] = 1
 
-        #return combined
+        # create the histogram for debug purposes
+        self.histogram = self.getHistogram()
         return self.result
 
     #return the histogram of the thresholded image
@@ -104,13 +66,57 @@ class thresholdedImage:
         # Sum across image pixels vertically
         histogram_data = np.sum(bottom_half, axis=0)
         # Scale it for image size
-        histogram_y = (binary.shape[0]-1) - (np.interp(histogram_data, (histogram_data.min(), histogram_data.max()), (0, (binary.shape[0]-1))).astype(int))
-        histogram_x = np.arange(binary.shape[1]).astype(int)
+        ysize = binary.shape[0]-1
+        xsize = binary.shape[1]
+        histogram_y = ysize - (np.interp(histogram_data, (histogram_data.min(), histogram_data.max()), (0, ysize)).astype(int))
+        histogram_x = np.arange(xsize).astype(int)
         #prepare the point for polylines
         points = np.vstack((histogram_x, histogram_y)).T
-        cv2.polylines(self.histogram, np.int32([points]), 0, (255,255,255), 10)
+        cv2.polylines(self.histogram, np.int32([points]), 0, (255,255,255), 5)
         return self.histogram
 
+    #Alternate approach  suggested by reviewer
+    #The performance of CLAHE+HSV is less than the current
+    #approach in the project.
+    def prepareThreshold_2():
+        #preprocessing the images through a brightness adjustment filter
+        #using a Contrast Limited Adaptive Histogram Equalization (CLAHE)
+        #algorithm. This will help to better detect the yellow lane line road
+        #markers that have over-cast shadows in the original image for
+        #subsequent steps (e.g. getting a binary threshold color mask for
+        #yellow and white lane lines).
+        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+        lab_planes = cv2.split(lab)
+        _clahe = cv2.createCLAHE(clipLimit=2.0,tileGridSize=(8,8))
+        lab_planes[0] = _clahe.apply(lab_planes[0])
+        lab = cv2.merge(lab_planes)
+        self.image_clahe = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+        self.result = np.zeros((self.image_clahe.shape[0],self.image_clahe.shape[1]))
+
+        hsv = cv2.cvtColor(self.image_clahe, cv2.COLOR_RGB2HSV)
+        H = hsv[:,:,0]
+        S = hsv[:,:,1]
+        V = hsv[:,:,2]
+
+        R = self.image_clahe[:,:,0]
+        G = self.image_clahe[:,:,1]
+        B = self.image_clahe[:,:,2]
+
+        t_yellow_H = self.thresh(H,10,30)
+        t_yellow_S = self.thresh(S,50,255)
+        t_yellow_V = self.thresh(V,150,255)
+
+        t_white_R = self.thresh(R,225,255)
+        t_white_V = self.thresh(V,230,255)
+
+        self.result[(t_yellow_H==1) & (t_yellow_S==1) & (t_yellow_V==1)] = 1
+        self.result[(t_white_R==1)|(t_white_V==1)] = 1
+
+    def thresh(self, image, thresh_min, thresh_max):
+        ret = np.zeros_like(image)
+        ret[(image >= thresh_min) & (image <= thresh_max)] = 1
+        return ret
 ## The following functions are only for investigation purposes. This was used for the explorative
 ## to identify the best possible thresholds
 

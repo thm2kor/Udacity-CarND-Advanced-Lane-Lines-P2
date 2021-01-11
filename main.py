@@ -44,21 +44,16 @@ class pipeline:
         #overlay the tracks on the distorted image
         filled_track = self.track.overlay_lanes(self.distorted, self.edges)
         #unwarp the combined image
+        unwarp = self.pt.unwarp(filled_track)
+        #Combine the result with the original image
+        self.result = cv2.addWeighted(self.distorted, 1, unwarp, 0.5, 0)
+        #display the curve radius and position
+        self.result = self.add_header(self.result)
+        #in debug mode show a 2x2 frame with visual debug information
         if config.debug_mode == True and mode == 0:#1= video mode
-            #result = self.show_debug_info(self.edges)
-            result = self.prepare_side_by_side()
-            #in the debug mode, only return edges and the line fits
-            #TODO: Update the texts in white fonts
-            return result
-        else:
-            unwarp = self.pt.unwarp(filled_track)
-            #Combine the result with the original image
-            result = cv2.addWeighted(self.distorted, 1, unwarp, 0.5, 0)
-            #display the curve radius and position
-            result = self.add_header(result)
-            #return result
-            #result = self.show_debug_info(self.edges)
-            return result
+            self.result = self.prepare_debug_windows()
+        #end of pipeline.
+        return self.result
 
     #Adds the calculated radius of curvature and vehicle position on the video frames
     def add_header(self, image):
@@ -88,39 +83,44 @@ class pipeline:
         return result
 
     ##Functions which draws the left and right line fits on the edges
-    def show_debug_info(self, edges):
+    def prepare_fits_debug(self, edges):
         debug_bin = np.dstack((edges*255, edges*255, edges*255))
 
         # overhead with all fits added (bottom right)
         debug_bin_points = np.copy(debug_bin)
-
-        debug_bin_points[self.track.leftline.ally, self.track.leftline.allx] = [255, 0, 0]
-        debug_bin_points[self.track.rightline.ally, self.track.rightline.allx] = [0, 0, 255]
+        #Uncomment the below lines if the x and y lane points needs to be shown in debugg window
+        #debug_bin_points[self.track.leftline.ally, self.track.leftline.allx] = [255, 0, 0]
+        #debug_bin_points[self.track.rightline.ally, self.track.rightline.allx] = [0, 0, 255]
 
         for i, fit in enumerate(self.track.leftline.current_fit):
-            debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (155,0, 0), 3)
+            debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (20*i+100,0,20*i+100), 3)
         for i, fit in enumerate(self.track.rightline.current_fit):
-            debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (0, 0, 155), 3)
+            debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (0, 20*i+100, 20*i+100), 3)
 
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.leftline.best_fit, (0,255,0))
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.rightline.best_fit, (0,255,0))
 
         return debug_bin_points
 
-    def prepare_side_by_side(self, width=1280, height=720):
+    def prepare_debug_windows(self, width=1280, height=720):
         font = cv2.FONT_HERSHEY_SIMPLEX
-        result = np.zeros((int(height/2), width, 3), dtype=np.uint8)
+        result = np.zeros((height, width, 3))
+
+        #prepare the edges for displaying in debug window
         edges_bin = np.dstack((self.edges*255, self.edges*255, self.edges*255))
+        #prepare the histogram for displaying in debug window
         histogram = self.binary.getHistogram()
-        hist_bin = np.dstack((histogram*255, histogram*255, histogram*255))
-
-        result[0:int(height/2), 0:int(width/2), : ] = cv2.resize( edges_bin, (int(width/2) ,int(height/2)))
-        text = 'Edges detected with combined results from Luv(l) and Lab(b)'
-        cv2.putText(result, text, (50,40), font, 0.5, (0,255,0), 2, cv2.LINE_AA)
-
-        result[0:int(height/2), int(width/2):width, :] = cv2.resize( hist_bin, (int(width/2) ,int(height/2)))
-        text = 'Histogram'
-        cv2.putText(result, text, (int((width/2)+50),40), font, 0.5, (0,255,0), 2, cv2.LINE_AA)
+        hist_bin = np.dstack((histogram, histogram, histogram))
+        #prepare the line fits for debug purposes
+        fits_bin = self.prepare_fits_debug(self.edges)
+        #Position the result in the TOP LEFT window
+        result[0:int(height/2), 0:int(width/2), : ] = cv2.resize( self.result, (int(width/2) ,int(height/2)))
+        #Position the edges in the TOP RIGHT window
+        result[0:int(height/2), int(width/2):width, :] = cv2.resize( edges_bin, (int(width/2) ,int(height/2)))
+        #Position the histogram in the BOTTOM RIGHT window
+        result[int(height/2):height, int(width/2):width, :] = cv2.resize( hist_bin, (int(width/2) ,int(height/2)))
+        #BOTTOM LEFT is empty
+        result[int(height/2):height, 0:int(width/2), :] = cv2.resize( fits_bin, (int(width/2) ,int(height/2)))
 
         return result
 
