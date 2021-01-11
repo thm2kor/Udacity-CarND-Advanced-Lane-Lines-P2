@@ -31,9 +31,9 @@ class pipeline:
 
     #Pipeline for Lane processing
     def __call__(self, image, mode=0):
-        self.distorted = np.copy(image)
+        self.original = np.copy(image)
         #Undistort the given image
-        ret, undistorted = self.cc.undistort(self.distorted)
+        ret, undistorted = self.cc.undistort(self.original)
         #apply perspective transform to the undistorted image
         self.warped = self.pt.warp(undistorted)
         #color threshold the frames to filter the lane lines
@@ -42,8 +42,14 @@ class pipeline:
         #find the lines based on the detected edges
         self.track.detect_lines(self.edges)
         #overlay the tracks on the distorted image
-        filled_track = self.track.overlay_lanes(distorted, self.edges)
+        filled_track = self.track.overlay_lanes(self.original, self.edges)
         #unwarp the combined image
+        unwarp = self.pt.unwarp(filled_track)
+        #Combine the result with the original image
+        result = cv2.addWeighted(self.original, 1, unwarp, 0.5, 0)
+        #Calculate and display the curve radius and distance to the center of vehicle
+        result = self.add_header(result)
+        #Prepare the debug window
         if config.debug_mode == True and mode == 0:#1= video mode
             self.result = self.prepare_debug_windows()
         #end of pipeline.
