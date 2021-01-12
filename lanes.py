@@ -50,6 +50,10 @@ class line():
             self.radius_of_curvature = 0
         return self.radius_of_curvature
 
+    def reset_curr_fits(self):
+        self.ranking = []
+        self.current_fit = []
+
     # This function validates the "recent-fit" which was set by the 'track' object.
     # The line object saves the last n fits. If the incoming fit is deviating too much
     # from the last n fits, then the line rejects the fit and sets the internal state
@@ -224,7 +228,7 @@ class drivingLane:
         # Create empty lists to receive left and right lane pixel indices
         left_lane_inds = []
         right_lane_inds = []
-        # reset the window rejects
+        # reset the sliding window rects
         self.left_window_rects = []
         self.right_window_rects = []
         # Step through the windows one by one
@@ -263,6 +267,7 @@ class drivingLane:
 
         # Fit a second order polynomial to each
         if len(leftx) != 0:
+            self.leftline.reset_curr_fits()
             self.leftline.recent_xfitted = leftx
             self.leftline.allx = leftx
             self.leftline.ally=lefty
@@ -273,6 +278,7 @@ class drivingLane:
             #print ('left lane not found')
 
         if len(rightx) != 0:
+            self.rightline.reset_curr_fits()
             self.rightline.recent_xfitted = rightx
             self.rightline.allx = rightx
             self.rightline.ally = righty
@@ -287,7 +293,10 @@ class drivingLane:
     # Chapter 8: Advanced Computer Vision
     # Minor modifications done for encapsulating the function inside a class
     def follow_prev_fit(self,binary_warped):
-        #print ('tracking lane')
+        # reset the sliding window rects
+        self.left_window_rects = []
+        self.right_window_rects = []
+
         nonzero = binary_warped.nonzero()
         nonzeroy = np.array(nonzero[0])
         nonzerox = np.array(nonzero[1])

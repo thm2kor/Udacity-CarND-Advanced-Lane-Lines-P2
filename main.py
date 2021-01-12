@@ -4,7 +4,6 @@ import argparse
 import config
 import os
 import numpy as np
-import imageio
 from moviepy.editor import VideoFileClip
 
 #project specific modules
