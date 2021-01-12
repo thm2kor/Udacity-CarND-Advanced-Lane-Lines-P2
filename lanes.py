@@ -31,11 +31,17 @@ class line():
         self.thickness = 15
         #weights for average
         self.ranking = []
+        #inverted V weights. The weights would be increasin as the points are
+        #detected closer to the mid points
+        self.init_weights(config.IMAGE_WIDTH, config.IMAGE_HEIGHT)
         #y values for detected line pixels
         self.ally = []
         #x values for detected line pixels
         self.allx = []
 
+    def init_weights(self, xsize, ysize):
+        self.weights = np.arange(start=0, stop=int(2*ysize)-1, step=(2*ysize/xsize), dtype=np.float)
+        self.weights[int(xsize/2):] = self.weights[int(xsize/2)-1::-1]
     ## calculate the radis of curvature
     def calc_curavture(self, ym_per_pix, xm_per_pix ):
         ploty = np.linspace(0, (config.IMAGE_HEIGHT)-1, config.IMAGE_HEIGHT)
