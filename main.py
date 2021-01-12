@@ -152,9 +152,16 @@ class pipeline:
         #prepare the edges for displaying in debug window
         edges_bin = np.dstack((self.edges*255, self.edges*255, self.edges*255))
         #prepare the histogram for displaying in debug window
-        hist_bin = self.binary.getHistogram()
-        #combine the edges and histogram in a single quadrant
+        hist_bin = self.binary.histogram
+        #prepare the window rects
+        rect_bin = np.zeros_like (result)
+        for i, rect in enumerate(self.track.left_window_rects):
+            cv2.rectangle(rect_bin, (rect[0], rect[1]),( rect[2], rect[3]), (255,255,0),2)
+        for i, rect in enumerate(self.track.right_window_rects):
+            cv2.rectangle(rect_bin, (rect[0], rect[1]),( rect[2], rect[3]), (255,255,0),2)
+        #combine the edges, histogram and window rects in a single quadrant
         edges_bin = cv2.bitwise_or(edges_bin, hist_bin)
+        edges_bin = cv2.bitwise_or(edges_bin, rect_bin)
         #prepare the line fits for debug purposes
         fits_bin = self.prepare_fits_debug(self.edges)
         #Position the result in the TOP LEFT window

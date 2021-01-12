@@ -86,6 +86,8 @@ class drivingLane:
         self.detected = False
         self.width = 0.
         self.vehicle_pos = 0.
+        self.left_window_rects = []
+        self.right_window_rects = []
         ##From class notes Lesson 8 - Advanced Computer vision - Measuring Curvature -II
         ##"U.S. regulations require a minimum lane width of 12 feet or 3.7 meters,
         ## and the dashed lane lines are 10 feet or 3 meters long each."
@@ -225,6 +227,9 @@ class drivingLane:
             win_xleft_high = leftx_current + margin
             win_xright_low = rightx_current - margin
             win_xright_high = rightx_current + margin
+            #saving the window rects for debugg purposes
+            self.left_window_rects.append((win_xleft_low, win_y_low, win_xleft_high, win_y_high))
+            self.right_window_rects.append((win_xright_low, win_y_low, win_xright_high, win_y_high))
             # Identify the nonzero pixels in x and y within the window
             good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
             good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
