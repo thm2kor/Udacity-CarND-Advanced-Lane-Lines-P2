@@ -201,13 +201,13 @@ class drivingLane:
         # Find the peak of the left and right halves of the histogram
         # These will be the starting point for the left and right lines
         midpoint = np.int(histogram.shape[0]//2)
-        #quarter_point = np.int(midpoint//2)
-        # Previously the left/right base was the max of the left/right half of the histogram
-        # this changes it so that only a quarter of the histogram (directly to the left/right) is considered
-        leftx_base = np.argmax(histogram[:midpoint])
-        rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+        quarter_point = np.int(midpoint//2)
+        # look for the left lane between 25% to 50% of the width of the image
+        leftx_base = np.argmax(histogram[quarter_point:midpoint]) + quarter_point
+        # look for the right lane between 55% to 75% of the width of the image
+        rightx_base = np.argmax(histogram[midpoint:(midpoint+quarter_point)]) + midpoint
         # Choose the number of sliding windows
-        nwindows = 10
+        nwindows = 15
         # Set height of windows
         window_height = np.int(img.shape[0]/nwindows)
         # Identify the x and y positions of all nonzero pixels in the image
@@ -224,6 +224,9 @@ class drivingLane:
         # Create empty lists to receive left and right lane pixel indices
         left_lane_inds = []
         right_lane_inds = []
+        # reset the window rejects
+        self.left_window_rects = []
+        self.right_window_rects = []
         # Step through the windows one by one
         for window in range(nwindows):
             # Identify window boundaries in x and y (and right and left)
@@ -267,7 +270,7 @@ class drivingLane:
             self.leftline.detected = True
         else:
             self.leftline.recent_fit = None
-            print ('left lane not found')
+            #print ('left lane not found')
 
         if len(rightx) != 0:
             self.rightline.recent_xfitted = rightx
@@ -277,7 +280,7 @@ class drivingLane:
             self.rightline.detected = True
         else:
             self.rightline.recent_fit = None
-            print ('right lane not found')
+            #print ('right lane not found')
 
     # Tracking a line based on the previous selected fit.
     # code taken over from Lesson : Finding the Lines: Search from Prior

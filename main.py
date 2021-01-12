@@ -206,16 +206,17 @@ def processVideo(filename, start, end):
 
 # function which reads in a image file and prepares the frames for the pipeline
 def processImage(filename):
-    #read in the file and flipping the color from BGR to RGB
-    #critical for the detection of yellow lines
-    image = cv2.cvtColor(mpimg.imread(filename), cv2.COLOR_BGR2RGB)
+    image = mpimg.imread(filename)
+
     pl = pipeline()
     result = pl(image,1)
     if config.debug_mode == False:
         result_file_name = 'result_' + os.path.basename(filename)
     else:
         result_file_name = 'debug_result_' + os.path.basename(filename)
-    cv2.imwrite(output_path + result_file_name, result)
+    #imsave expects pixel values as uint8
+    result = np.array(result, dtype=np.uint8).reshape(result.shape)
+    mpimg.imsave(output_path + result_file_name, result)
     print ('Results saved at ' + output_path + result_file_name )
 
 #start-up function - Reads in the program arguments and prepares the respective pipelines
