@@ -50,7 +50,7 @@ class pipeline:
         #Calculate and display the curve radius and distance to the center of vehicle
         self.result = self.appendHeader(self.result)
         #Prepare the debug window
-        if config.debug_mode == True and mode == 0:#1= video mode
+        if config.debug_mode == True:
             self.result = self.prepare_debug_windows()
         #end of pipeline.
         return self.result
@@ -120,14 +120,16 @@ class pipeline:
         else:
             text = 'Incoming fit R: None'
         cv2.putText(diagnose, text, (40,400), font, .4, (200,255,155), 1, cv2.LINE_AA)
-        text = 'Best Fit L: ' + ' {:0.6f}'.format(self.track.leftline.best_fit[0]) + \
-                                ' {:0.6f}'.format(self.track.leftline.best_fit[1]) + \
-                                ' {:0.6f}'.format(self.track.leftline.best_fit[2])
-        cv2.putText(diagnose, text, (40,440), font, .4, (200,255,155), 1, cv2.LINE_AA)
-        text = 'Best Fit R: ' + ' {:0.6f}'.format(self.track.rightline.best_fit[0]) + \
-                                ' {:0.6f}'.format(self.track.rightline.best_fit[1]) + \
-                                ' {:0.6f}'.format(self.track.rightline.best_fit[2])
-        cv2.putText(diagnose, text, (40,460), font, .4, (200,255,155), 1, cv2.LINE_AA)
+        if self.track.leftline.best_fit is not None:
+            text = 'Best Fit L: ' + ' {:0.6f}'.format(self.track.leftline.best_fit[0]) + \
+                                    ' {:0.6f}'.format(self.track.leftline.best_fit[1]) + \
+                                    ' {:0.6f}'.format(self.track.leftline.best_fit[2])
+            cv2.putText(diagnose, text, (40,440), font, .4, (200,255,155), 1, cv2.LINE_AA)
+        if self.track.rightline.best_fit is not None:
+            text = 'Best Fit R: ' + ' {:0.6f}'.format(self.track.rightline.best_fit[0]) + \
+                                    ' {:0.6f}'.format(self.track.rightline.best_fit[1]) + \
+                                    ' {:0.6f}'.format(self.track.rightline.best_fit[2])
+            cv2.putText(diagnose, text, (40,460), font, .4, (200,255,155), 1, cv2.LINE_AA)
 
         for i, fit in enumerate(self.track.leftline.current_fit):
             text = 'Prev fits L: ' + ' {:d}'.format(i) + \
@@ -205,12 +207,16 @@ def processVideo(filename, start, end):
 # function which reads in a image file and prepares the frames for the pipeline
 def processImage(filename):
     #read in the file and flipping the color from BGR to RGB
+    #critical for the detection of yellow lines
     image = cv2.cvtColor(mpimg.imread(filename), cv2.COLOR_BGR2RGB)
     pl = pipeline()
     result = pl(image,1)
-
-    mpimg.imsave( output_path + 'result_' + os.path.basename(filename) , cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
-    print ('Results saved at ' + output_path + 'result_' + os.path.basename(filename) )
+    if config.debug_mode == False:
+        result_file_name = 'result_' + os.path.basename(filename)
+    else:
+        result_file_name = 'debug_result_' + os.path.basename(filename)
+    cv2.imwrite(output_path + result_file_name, result)
+    print ('Results saved at ' + output_path + result_file_name )
 
 #start-up function - Reads in the program arguments and prepares the respective pipelines
 def main():

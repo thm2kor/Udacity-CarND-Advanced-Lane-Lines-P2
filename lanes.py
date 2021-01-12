@@ -39,12 +39,15 @@ class line():
     ## calculate the radis of curvature
     def calc_curavture(self, ym_per_pix, xm_per_pix ):
         ploty = np.linspace(0, (config.IMAGE_HEIGHT)-1, config.IMAGE_HEIGHT)
-        #fit a second degree polynomial, which fits the current x and y points
-        fit_cr = np.polyfit((self.ally * ym_per_pix), (self.allx * xm_per_pix), 2)
-        #fit a second degree polynomial, which fits the current x and y points
-        y_eval = np.max(ploty)*ym_per_pix
+        try:
+            #fit a second degree polynomial, which fits the current x and y points
+            fit_cr = np.polyfit((self.ally * ym_per_pix), (self.allx * xm_per_pix), 2)
+            #fit a second degree polynomial, which fits the current x and y points
+            y_eval = np.max(ploty)*ym_per_pix
 
-        self.radius_of_curvature = ((1 + (2*fit_cr[0]*y_eval + fit_cr[1])**2)**1.5)/abs(2*fit_cr[0])
+            self.radius_of_curvature = ((1 + (2*fit_cr[0]*y_eval + fit_cr[1])**2)**1.5)/abs(2*fit_cr[0])
+        except:
+            self.radius_of_curvature = 0
         return self.radius_of_curvature
 
     # This function validates the "recent-fit" which was set by the 'track' object.
@@ -160,9 +163,12 @@ class drivingLane:
         ##is your distance from the center of the lane.
         ## https://knowledge.udacity.com/questions/311566
         vehicle_position = image_shape[1]/2
-        leftline_intercept = self.leftline.best_fit[0]*image_shape[0]**2 + self.leftline.best_fit[1]*image_shape[0] + self.leftline.best_fit[2]
-        rightline_intercept = self.rightline.best_fit[0]*image_shape[0]**2 + self.rightline.best_fit[1]*image_shape[0] + self.rightline.best_fit[2]
-        lane_center = (leftline_intercept + rightline_intercept) /2
+        if self.leftline.best_fit is not None and self.rightline.best_fit is not None:
+            leftline_intercept = self.leftline.best_fit[0]*image_shape[0]**2 + self.leftline.best_fit[1]*image_shape[0] + self.leftline.best_fit[2]
+            rightline_intercept = self.rightline.best_fit[0]*image_shape[0]**2 + self.rightline.best_fit[1]*image_shape[0] + self.rightline.best_fit[2]
+            lane_center = (leftline_intercept + rightline_intercept) /2
+        else:
+            lane_center = 0
         self.vehicle_pos = (vehicle_position - lane_center) * self.xm_per_pix
         return self.vehicle_pos
 
@@ -261,7 +267,7 @@ class drivingLane:
             self.leftline.detected = True
         else:
             self.leftline.recent_fit = None
-            #print ('left lane not found')
+            print ('left lane not found')
 
         if len(rightx) != 0:
             self.rightline.recent_xfitted = rightx
@@ -271,7 +277,7 @@ class drivingLane:
             self.rightline.detected = True
         else:
             self.rightline.recent_fit = None
-            #print ('right lane not found')
+            print ('right lane not found')
 
     # Tracking a line based on the previous selected fit.
     # code taken over from Lesson : Finding the Lines: Search from Prior
