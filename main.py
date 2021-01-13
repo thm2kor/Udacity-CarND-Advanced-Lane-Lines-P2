@@ -23,6 +23,7 @@ class OutputType(Enum):
     Edges="Edges"
     Warped="Warped"
     Histogram="Histogram"
+    Lines="Lines"
 
     def __str__(self):
         return self.value
@@ -41,17 +42,21 @@ class pipeline:
         self.mode = mode
     #Pipeline for Lane processing
     def __call__(self, image):
+        #save a copy of the incoming image
         self.original = np.copy(image)
         #Undistort the given image
         ret, undistorted = self.cc.undistort(self.original)
         #apply perspective transform to the undistorted image
         self.warped = self.pt.warp(undistorted)
+        #special case. Return intermediate result. No further proecessing.
+        #Use only for debugging purposes
         if self.mode == OutputType.Warped:
             return self.warped
         #color threshold the frames to filter the lane lines
         self.binary = thresholdedImage(self.warped)
         self.edges , self.histogram_data = self.binary.applyThresholds()
-        #special case.
+        #special case. Return intermediate result. No further proecessing.
+        #Use only for debugging purposes
         if self.mode == OutputType.Edges:
             return np.dstack((self.edges*255, self.edges*255, self.edges*255))
         if self.mode == OutputType.Histogram:
@@ -61,6 +66,8 @@ class pipeline:
         self.track.detect_lines(self.edges , self.histogram_data)
         #overlay the tracks on the distorted image
         filled_track = self.track.overlay_lanes(self.original, self.edges)
+        if self.mode == OutputType.Lines:
+            return filled_track
         #unwarp the combined image
         unwarp = self.pt.unwarp(filled_track)
         #Combine the result with the original image
@@ -107,8 +114,8 @@ class pipeline:
         # overhead with all fits added (bottom right)
         debug_bin_points = np.copy(debug_bin)
         #Uncomment the below lines if the x and y lane points needs to be shown in debugg window
-        #debug_bin_points[self.track.leftline.ally, self.track.leftline.allx] = [255, 0, 0]
-        #debug_bin_points[self.track.rightline.ally, self.track.rightline.allx] = [0, 0, 255]
+        debug_bin_points[self.track.leftline.ally, self.track.leftline.allx] = [255, 0, 0]
+        debug_bin_points[self.track.rightline.ally, self.track.rightline.allx] = [0, 0, 255]
 
         for i, fit in enumerate(self.track.leftline.current_fit):
             debug_bin_points = self.draw_lines_on_image(debug_bin_points, fit, (20*i+100,0,20*i+100), 3)

@@ -348,6 +348,9 @@ class drivingLane:
         pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
         pts = np.hstack((pts_left, pts_right))
 
+        color_warp[self.leftline.ally, self.leftline.allx] = [255, 0, 0]
+        color_warp[self.rightline.ally, self.rightline.allx] = [0, 0, 255]
+
         # Draw the lane onto the warped blank image
         cv2.fillPoly(color_warp, np.int_([pts]), (0,255, 0))
         cv2.polylines(color_warp, np.int32([pts_left]), isClosed=False, color=self.leftline.color, thickness=self.leftline.thickness)
