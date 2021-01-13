@@ -75,9 +75,9 @@ class thresholdedImage:
         #the first and fourth colum would be 0. No lanes points are expected there
         #the second column would progressively increase from 0 to 720 within the quadrant
         #the third column would progressively decrease from 720 to 0 within the quadrant
-        weights = [ int(4*i*ysize/xsize - ysize) if i > (xsize*0.25) and i < (xsize*0.75) else 0  for i in x]
-        self.weights = [ 2*ysize - (i)  if i > ysize else i  for i in weights]
-        self.histogram_data *= weights
+        self.weights = [ int(4*i*ysize/xsize - ysize) if i > (xsize*0.25) and i < (xsize*0.75) else 0  for i in x]
+        self.weights = [ 2*ysize - (i)  if i > ysize else i  for i in self.weights]
+        self.histogram_data = self.histogram_data * self.weights
 
         histogram_y = ysize - (np.interp(self.histogram_data, (self.histogram_data.min(),
                 self.histogram_data.max()), (0, ysize)).astype(int))
