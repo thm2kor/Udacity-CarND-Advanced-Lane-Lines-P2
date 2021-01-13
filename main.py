@@ -4,6 +4,7 @@ import argparse
 import config
 import os
 import numpy as np
+from enum import Enum
 from moviepy.editor import VideoFileClip
 
 #project specific modules
@@ -17,9 +18,18 @@ output_path = 'output_images/'
 output_path_video = 'output_videos/'
 test_images_path = 'test_images/*.jpg'
 
+class OutputType(Enum):
+    Final="Final"
+    Edges="Edges"
+    Warped="Warped"
+    Histogram="Histogram"
+
+    def __str__(self):
+        return self.value
+
 #class - the default function serves as the pipeline for the images and video frames
 class pipeline:
-    def __init__(self):
+    def __init__(self, mode=OutputType.Final):
         # Load the calibration parameters from the pickle file
         self.cc = cameraCalibration(pickle_file_path)
         # track object encapsulates the lane lines detection and the
@@ -27,17 +37,26 @@ class pipeline:
         self.track = drivingLane()
         # pt encapsulates the transform matrices, warp and unwarp function
         self.pt = perspectiveTransform()
-
+        # copy the application mode
+        self.mode = mode
     #Pipeline for Lane processing
-    def __call__(self, image, mode=0):
+    def __call__(self, image):
         self.original = np.copy(image)
         #Undistort the given image
         ret, undistorted = self.cc.undistort(self.original)
         #apply perspective transform to the undistorted image
         self.warped = self.pt.warp(undistorted)
+        if self.mode == OutputType.Warped:
+            return self.warped
         #color threshold the frames to filter the lane lines
         self.binary = thresholdedImage(self.warped)
         self.edges , self.histogram_data = self.binary.applyThresholds()
+        #special case.
+        if self.mode == OutputType.Edges:
+            return np.dstack((self.edges*255, self.edges*255, self.edges*255))
+        if self.mode == OutputType.Histogram:
+            result = np.zeros((config.IMAGE_HEIGHT, config.IMAGE_WIDTH, 3))
+            return cv2.bitwise_or(result, self.binary.histogram)
         #find the lines based on the detected edges
         self.track.detect_lines(self.edges , self.histogram_data)
         #overlay the tracks on the distorted image
@@ -146,7 +165,7 @@ class pipeline:
             cv2.putText(diagnose, text, (360,480+(20*(i+1))), font, .4, (200,255,155), 1, cv2.LINE_AA)
         return diagnose
 
-    def prepare_debug_windows(self, width=1280, height=720):
+    def prepare_debug_windows(self, width=config.IMAGE_WIDTH, height=config.IMAGE_HEIGHT):
         result = np.zeros((height, width, 3))
 
         #prepare the edges for displaying in debug window
@@ -191,12 +210,12 @@ class pipeline:
         return result
 
 # function which reads in a video and prepares the frames for the pipeline
-def processVideo(filename, start, end):
+def processVideo(filename, start, end, mode=OutputType.Final):
     clip = VideoFileClip(filename)
     if start > 0 and end > 0:
         print('processing input video from ' + str(start) + ' to ' + str(end) + ' seconds')
         clip = clip.subclip(start,end)
-    snapshot = clip.fl_image(pipeline() )
+    snapshot = clip.fl_image(pipeline(mode) )
 
     if config.debug_mode == False:
         result_file_name = 'result_' + os.path.basename(filename)
@@ -206,11 +225,11 @@ def processVideo(filename, start, end):
     return
 
 # function which reads in a image file and prepares the frames for the pipeline
-def processImage(filename):
+def processImage(filename, mode=OutputType.Final):
     image = mpimg.imread(filename)
 
-    pl = pipeline()
-    result = pl(image,1)
+    pl = pipeline(mode)
+    result = pl(image)
     if config.debug_mode == False:
         result_file_name = 'result_' + os.path.basename(filename)
     else:
@@ -227,6 +246,7 @@ def main():
     parser.add_argument('filename')
     parser.add_argument('--debug', dest='debug_mode', action='store_true')
     parser.add_argument('--timeslot', dest='timeslot')
+    parser.add_argument('--mode', dest='mode', type=OutputType, choices=list(OutputType))
     #read command line agruments
     args = parser.parse_args()
     config.debug_mode = args.debug_mode
@@ -245,10 +265,14 @@ def main():
         start = -1
         end = -1
 
+    mode = OutputType.Final
+    if args.mode:
+        mode = args.mode
+
     if args.filename[-4:] == '.mp4':
-        processVideo(args.filename, start, end)
+        processVideo(args.filename, start, end, mode)
     else: ##assuming image
-        processImage (args.filename)
+        processImage (args.filename, mode)
 
 if __name__ == '__main__':
     main()
