@@ -37,9 +37,9 @@ class pipeline:
         self.warped = self.pt.warp(undistorted)
         #color threshold the frames to filter the lane lines
         self.binary = thresholdedImage(self.warped)
-        self.edges = self.binary.applyThresholds()
+        self.edges , self.histogram_data = self.binary.applyThresholds()
         #find the lines based on the detected edges
-        self.track.detect_lines(self.edges)
+        self.track.detect_lines(self.edges , self.histogram_data)
         #overlay the tracks on the distorted image
         filled_track = self.track.overlay_lanes(self.original, self.edges)
         #unwarp the combined image
@@ -160,7 +160,7 @@ class pipeline:
         for i, rect in enumerate(self.track.right_window_rects):
             cv2.rectangle(rect_bin, (rect[0], rect[1]),( rect[2], rect[3]), (255,255,0),2)
         #print the init_weights
-        for i, weight in enumerate(self.track.leftline.weights):
+        for i, weight in enumerate(self.binary.weights):
             cv2.circle(rect_bin, (i,int(720-weight)), radius=2, color=(255,0,255), thickness=-1)
         #combine the edges, histogram and window rects in a single quadrant
         edges_bin = cv2.bitwise_or(edges_bin, hist_bin)

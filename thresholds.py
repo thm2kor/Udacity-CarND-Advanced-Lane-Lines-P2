@@ -54,7 +54,7 @@ class thresholdedImage:
 
         # create the histogram for debug purposes
         self.histogram = self.getHistogram()
-        return self.result
+        return self.result , self.histogram_data
 
     #return the histogram of the thresholded image
     def getHistogram(self):
@@ -65,11 +65,22 @@ class thresholdedImage:
         # Lane lines are likely to be mostly vertical nearest to the car
         bottom_half = binary[binary.shape[0]//2:,:]
         # Sum across image pixels vertically
-        histogram_data = np.sum(bottom_half, axis=0)
+        self.histogram_data = np.sum(bottom_half, axis=0)
         # Scale it for image size
-        ysize = binary.shape[0]-1
+        ysize = binary.shape[0]
         xsize = binary.shape[1]
-        histogram_y = ysize - (np.interp(histogram_data, (histogram_data.min(), histogram_data.max()), (0, ysize)).astype(int))
+        #preparing weights for histoggram data to eliminate false detection of lanes
+        x = np.arange(start=0, stop=xsize, step=1, dtype=np.uint32)
+        #divide the image in 4 equalcolumns
+        #the first and fourth colum would be 0. No lanes points are expected there
+        #the second column would progressively increase from 0 to 720 within the quadrant
+        #the third column would progressively decrease from 720 to 0 within the quadrant
+        weights = [ int(4*i*ysize/xsize - ysize) if i > (xsize*0.25) and i < (xsize*0.75) else 0  for i in x]
+        self.weights = [ 2*ysize - (i)  if i > ysize else i  for i in weights]
+        self.histogram_data *= weights
+
+        histogram_y = ysize - (np.interp(self.histogram_data, (self.histogram_data.min(),
+                self.histogram_data.max()), (0, ysize)).astype(int))
         histogram_x = np.arange(xsize).astype(int)
         #prepare the point for polylines
         points = np.vstack((histogram_x, histogram_y)).T

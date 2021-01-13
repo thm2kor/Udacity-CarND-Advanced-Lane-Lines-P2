@@ -184,10 +184,10 @@ class drivingLane:
 
     #Function that detects potential lane lines from an warped, binary thresholded
     #image.
-    def detect_lines(self, edges):
+    def detect_lines(self, edges, histogram_data):
         if not self.is_detected():
             # attempts the find a set of lines based on "sliding windows method"
-            self.find_new_fit(edges)
+            self.find_new_fit(edges, histogram_data)
         else:
             # find the lane around the points detected from the previous function
             self.follow_prev_fit(edges)
@@ -205,23 +205,20 @@ class drivingLane:
     # Chapter 8: Advanced Computer Vision
     # from Udacity Nanodegree program :
     # Minor modifications done for encapsulating the function inside a class
-    def find_new_fit(self, img):
-        # Take a histogram of the bottom half of the image
-        histogram = np.sum(img[img.shape[0]//2:,:], axis=0)
+    def find_new_fit(self, edges, histogram_data):
         # Find the peak of the left and right halves of the histogram
         # These will be the starting point for the left and right lines
-        midpoint = np.int(histogram.shape[0]//2)
-        quarter_point = np.int(midpoint//2)
-        # look for the left lane between 25% to 50% of the width of the image
-        leftx_base = np.argmax(histogram[quarter_point:midpoint]) + quarter_point
-        # look for the right lane between 55% to 75% of the width of the image
-        rightx_base = np.argmax(histogram[midpoint:(midpoint+quarter_point)]) + midpoint
+        midpoint = np.int(histogram_data.shape[0]//2)
+        # look for the left lane in the left half of the imae
+        leftx_base = np.argmax(histogram_data[:midpoint])
+        # look for the right lane in the other half
+        rightx_base = np.argmax(histogram_data[midpoint:]) + midpoint
         # Choose the number of sliding windows
         nwindows = 15
         # Set height of windows
-        window_height = np.int(img.shape[0]/nwindows)
+        window_height = np.int(edges.shape[0]/nwindows)
         # Identify the x and y positions of all nonzero pixels in the image
-        nonzero = img.nonzero()
+        nonzero = edges.nonzero()
         nonzeroy = np.array(nonzero[0])
         nonzerox = np.array(nonzero[1])
         # Current positions to be updated for each window
@@ -240,8 +237,8 @@ class drivingLane:
         # Step through the windows one by one
         for window in range(nwindows):
             # Identify window boundaries in x and y (and right and left)
-            win_y_low = img.shape[0] - (window+1)*window_height
-            win_y_high = img.shape[0] - window*window_height
+            win_y_low = edges.shape[0] - (window+1)*window_height
+            win_y_high = edges.shape[0] - window*window_height
             win_xleft_low = leftx_current - margin
             win_xleft_high = leftx_current + margin
             win_xright_low = rightx_current - margin
