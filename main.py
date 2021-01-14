@@ -51,23 +51,25 @@ class pipeline:
         #special case. Return intermediate result. No further proecessing.
         #Use only for debugging purposes
         if self.mode == OutputType.Warped:
-            return self.warped
+            return self.prepare_frames_side_by_side(self.original, self.warped)
         #color threshold the frames to filter the lane lines
         self.binary = thresholdedImage(self.warped)
         self.edges , self.histogram_data = self.binary.applyThresholds()
         #special case. Return intermediate result. No further proecessing.
         #Use only for debugging purposes
         if self.mode == OutputType.Edges:
-            return np.dstack((self.edges*255, self.edges*255, self.edges*255))
+            result = np.dstack((self.edges*255, self.edges*255, self.edges*255))
+            return self.prepare_frames_side_by_side(self.original, result)
         if self.mode == OutputType.Histogram:
             result = np.dstack((self.edges*255, self.edges*255, self.edges*255))
-            return cv2.bitwise_or(result, self.binary.histogram)
+            result = cv2.bitwise_or(result, self.binary.histogram)
+            return self.prepare_frames_side_by_side(self.original, result)
         #find the lines based on the detected edges
         self.track.detect_lines(self.edges , self.histogram_data)
         #overlay the tracks on the distorted image
         filled_track = self.track.overlay_lanes(self.original, self.edges)
         if self.mode == OutputType.Lines:
-            return filled_track
+            return self.prepare_frames_side_by_side(self.original, filled_track)
         #unwarp the combined image
         unwarp = self.pt.unwarp(filled_track)
         #Combine the result with the original image
@@ -129,6 +131,12 @@ class pipeline:
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.rightline.virtual_twin, (80,80,80))
 
         return debug_bin_points
+
+    def prepare_frames_side_by_side(self, left, right, width=config.IMAGE_WIDTH, height=config.IMAGE_HEIGHT):
+        result = np.zeros((int(height/2), width, 3))
+        result[0:int(height/2), 0:int(width/2), : ] = cv2.resize( left, (int(width/2) ,int(height/2)))
+        result[0:int(height/2), int(width/2):width, :] = cv2.resize( right, (int(width/2) ,int(height/2)))
+        return result
 
     #Prints the debug texts. The location x and y for the cv2.putText are hard-coded
     #to the bottom left quadrant.
