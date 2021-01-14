@@ -19,11 +19,11 @@ output_path_video = 'output_videos/'
 test_images_path = 'test_images/*.jpg'
 
 class OutputType(Enum):
-    Final="Final"
-    Edges="Edges"
-    Warped="Warped"
-    Histogram="Histogram"
-    Lines="Lines"
+    Final="final"
+    Edges="edges"
+    Warped="warped"
+    Histogram="histogram"
+    Lines="track"
 
     def __str__(self):
         return self.value
@@ -252,7 +252,7 @@ def processVideo(filename, start, end, mode=OutputType.Final):
     snapshot = clip.fl_image(pipeline(mode) )
 
     if config.debug_mode == False:
-        result_file_name = 'result_' + os.path.basename(filename)
+        result_file_name = 'result_' + str(mode) + '_' + os.path.basename(filename)
     else:
         result_file_name = 'debug_result_' + os.path.basename(filename)
     snapshot.write_videofile(output_path_video + result_file_name, audio=False)
