@@ -125,6 +125,9 @@ class pipeline:
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.leftline.best_fit, (255,0,0))
         debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.rightline.best_fit, (0,0,255))
 
+        debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.leftline.virtual_twin, (80,80,80))
+        debug_bin_points = self.draw_lines_on_image(debug_bin_points, self.track.rightline.virtual_twin, (80,80,80))
+
         return debug_bin_points
 
     #Prints the debug texts. The location x and y for the cv2.putText are hard-coded
@@ -170,6 +173,22 @@ class pipeline:
                                     ' {:0.4f}'.format(fit[2])
 
             cv2.putText(diagnose, text, (360,480+(20*(i+1))), font, .4, (200,255,155), 1, cv2.LINE_AA)
+
+        if self.track.leftline.virtual_twin is not None:
+            text = 'Twin L: ' + ' {:0.6f}'.format(self.track.leftline.virtual_twin[0]) + \
+                                    ' {:0.6f}'.format(self.track.leftline.virtual_twin[1]) + \
+                                    ' {:0.6f}'.format(self.track.leftline.virtual_twin[2])
+        else:
+            text = 'Twin L: None'
+        cv2.putText(diagnose, text, (40,620), font, .4, (200,255,155), 1, cv2.LINE_AA)
+        if self.track.rightline.virtual_twin is not None:
+            text = 'Twin R: ' + ' {:0.6f}'.format(self.track.rightline.virtual_twin[0]) + \
+                                ' {:0.6f}'.format(self.track.rightline.virtual_twin[1]) + \
+                                ' {:0.6f}'.format(self.track.rightline.virtual_twin[2])
+        else:
+            text = 'Twin R R: None'
+        cv2.putText(diagnose, text, (360,620), font, .4, (200,255,155), 1, cv2.LINE_AA)
+
         return diagnose
 
     def prepare_debug_windows(self, width=config.IMAGE_WIDTH, height=config.IMAGE_HEIGHT):

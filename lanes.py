@@ -2,6 +2,10 @@ import numpy as np
 import cv2
 import config
 # class to receive the characteristics of each line detection
+
+#global variables
+SIZE_CURR_FIT_ARRAY = 10
+
 class line():
     def __init__(self, id=""):
         self.id = id
@@ -38,10 +42,13 @@ class line():
         self.ally = []
         #x values for detected line pixels
         self.allx = []
+        #virtual line
+        self.virtual_twin = None
 
     def init_weights(self, xsize, ysize):
         self.weights = np.arange(start=0, stop=int(2*ysize)-1, step=(2*ysize/xsize), dtype=np.float)
         self.weights[int(xsize/2):] = self.weights[int(xsize/2)-1::-1]
+
     ## calculate the radis of curvature
     def calc_curavture(self, ym_per_pix, xm_per_pix ):
         ploty = np.linspace(0, (config.IMAGE_HEIGHT)-1, config.IMAGE_HEIGHT)
@@ -56,16 +63,63 @@ class line():
             self.radius_of_curvature = 0
         return self.radius_of_curvature
 
+    #reset the current fits and ranking
     def reset_curr_fits(self):
         self.ranking = []
         self.current_fit = []
+        self.virtual_twin = None
+
+    # Calculate a polinomial value in a given point x
+    def y_eval(self, fit, x):
+        function = np.poly1d(fit)
+        return(function(x))
+
+    def prepare_virtual_twin(self, offset , max_l = 1):
+        x_points = np.linspace(0, max_l, num=25) # Reference curve points
+        y_points = self.y_eval(self.best_fit, x_points)
+        x_mid = [] # Mid x points
+        y_mid = [] # Mid Y points
+        m_mid = [] # Mid Slope points
+        # Calculate polints position between given points
+        for i in range(len(x_points)-1):
+            y_mid.append((y_points[i+1]-y_points[i])/2.0+y_points[i])
+            x_mid.append((x_points[i+1]-x_points[i])/2.0+x_points[i])
+            # Slope of perpendicular lines
+            if y_points[i+1] == y_points[i]: #Avoid division by 0
+                m_mid.append(1e8) # A very big number - infinite slope
+            else:
+                m_mid.append(-(x_points[i+1]-x_points[i])/(y_points[i+1]-y_points[i])) # Slope of a perpendicular
+        # Convert arrays into np.arrays
+        x_mid = np.array(x_mid)
+        y_mid = np.array(y_mid)
+        m_mid = np.array(m_mid)
+        # Calculate equidistant points
+        x_new = offset*np.sqrt(1.0/(1+m_mid**2)) # Calculate reference shift dx of the equidistant points
+        y_new = np.zeros_like(x_new) # Create np.array for y_eq
+        if offset >= 0: # x positions of the equidistant depends on direction
+            for i in range(len(y_mid)):
+                if m_mid[i] < 0:
+                    x_new[i] = x_mid[i]-abs(x_new[i])
+                else:
+                    x_new[i] = x_mid[i]+abs(x_new[i])
+                y_new[i] = (y_mid[i]-m_mid[i]*x_mid[i])+m_mid[i]*x_new[i]
+        else:
+            for i in range(len(y_mid)):
+                if m_mid[i] < 0:
+                    x_new[i] = x_mid[i]+abs(x_new[i])
+                else:
+                    x_new[i] = x_mid[i]-abs(x_new[i])
+                y_new[i] = (y_mid[i]-m_mid[i]*x_mid[i])+m_mid[i]*x_new[i]
+        # Fit a polinomial of order which is the same to the given one to the equidistant points
+        new_fit = np.polyfit(x_new, y_new, len(self.best_fit)-1)
+        return new_fit
 
     # This function validates the "recent-fit" which was set by the 'track' object.
     # The line object saves the last n fits. If the incoming fit is deviating too much
     # from the last n fits, then the line rejects the fit and sets the internal state
     # 'detected' to false. This is an indication to the track object to re-scan
     # the lanes using the sliding window approach.
-    def validate_recent_fit(self):
+    def validate_recent_fit(self , lane_width = 380):
         # if the recent fit is valid.
         # The track object can invalidate the recent fit by setting it to None
         if self.recent_fit is not None:
@@ -82,22 +136,24 @@ class line():
                 ## Ranking of the current fit based on the number of detected pixels
                 self.ranking.append(len(self.recent_xfitted))
                 # Limit the array (current_fit and ranking ) limited to 'n'
-                if len(self.current_fit) > 10: #keep the arrays(
-                    self.current_fit = self.current_fit[len(self.current_fit)-10:]
-                    self.ranking = self.ranking[len(self.ranking)-10:]
+                if len(self.current_fit) > SIZE_CURR_FIT_ARRAY: #keep the arrays(
+                    self.current_fit = self.current_fit[len(self.current_fit)-SIZE_CURR_FIT_ARRAY:]
+                    self.ranking = self.ranking[len(self.ranking)-SIZE_CURR_FIT_ARRAY:]
                 #calculate bets fit as a weighted average of the current fits based on ranking matrix
                 self.best_fit = np.average(self.current_fit, axis=0, weights=self.ranking)
+                self.virtual_twin = self.prepare_virtual_twin(lane_width)
         else:# No suitable fit from the last scan. keep the best fit as the average of the last n run
             self.detected = False
             if len(self.current_fit) > 0:
                 self.best_fit = np.average(self.current_fit, axis=0, weights=self.ranking)
+                self.virtual_twin = self.prepare_virtual_twin(lane_width)
 
 class drivingLane:
     def __init__(self) :
         self.leftline = line ('left')
         self.rightline = line ('right')
         self.detected = False
-        self.width = 0.
+        self.width = 380.
         self.vehicle_pos = 0.
         self.left_window_rects = []
         self.right_window_rects = []
@@ -107,8 +163,8 @@ class drivingLane:
 
         ## The above dimensions in world space is manually checked with an example warped
         ## image - straight_line1.jpg and straight_line2.jpg
-        self.ym_per_pix = 3/110 	# 110 is the number of pixels for one lane segement in straight_line1_warped.jpg
-        self.xm_per_pix = 3.7/380	# 380 is number of pixels for one lane width in straight_line1_warped.jpg
+        self.ym_per_pix = 3/110         # 110 is the number of pixels for one lane segement in straight_line1_warped.jpg
+        self.xm_per_pix = 3.7/380       # 380 is number of pixels for one lane width in straight_line1_warped.jpg
 
 
     def is_detected(self):
@@ -159,6 +215,15 @@ class drivingLane:
                 ret = True
         return ret
 
+    def saveLaneWidth(self):
+        width = 380 #Default value manually measured in Straightline1.jog
+        if self.leftline.recent_fit is not None and self.rightline.recent_fit is not None:
+            #calculate the intercept of the recent fit for both line
+            left_intercept = self.leftline.recent_fit[0]*config.IMAGE_HEIGHT**2 + self.leftline.recent_fit[1]*config.IMAGE_HEIGHT + self.leftline.recent_fit[2]
+            right_intercept = self.rightline.recent_fit[0]*config.IMAGE_HEIGHT**2 + self.rightline.recent_fit[1]*config.IMAGE_HEIGHT + self.rightline.recent_fit[2]
+            self.width = abs(right_intercept-left_intercept)
+        return self.width
+
     #trigger the calculation of the radius of curvature of the individual lines
     def calc_curvature(self):
         self.leftline.calc_curavture(self.ym_per_pix, self.xm_per_pix)
@@ -196,9 +261,10 @@ class drivingLane:
             # rejecting the lanes incase they are not plausible
             self.leftline.recent_fit = None
             self.rightline.recent_fit = None
+
         # validity check at line level
-        self.leftline.validate_recent_fit()
-        self.rightline.validate_recent_fit()
+        self.leftline.validate_recent_fit(self.width)
+        self.rightline.validate_recent_fit(-self.width)
 
     # Finding a lane based on the sliding windows  method.
     # code taken over from Lesson : Finding the Lines: Sliding Window
@@ -291,6 +357,9 @@ class drivingLane:
             self.rightline.recent_fit = None
             #print ('right lane not found')
 
+        if len(leftx) != 0 and len(rightx) != 0:
+            #both lanes found. Save the widths
+            self.saveLaneWidth()
     # Tracking a line based on the previous selected fit.
     # code taken over from Lesson : Finding the Lines: Search from Prior
     # Chapter 8: Advanced Computer Vision
@@ -328,7 +397,9 @@ class drivingLane:
             self.rightline.ally = righty
             self.rightline.allx = rightx
             self.rightline.recent_fit = np.polyfit(righty, rightx, 2)
-
+        if len(leftx) != 0 and len(rightx) != 0:
+            #both lanes found. Save the widths
+            self.saveLaneWidth()
 
     def overlay_lanes(self, original, overlay):
         #new_img = np.copy(original_img)
