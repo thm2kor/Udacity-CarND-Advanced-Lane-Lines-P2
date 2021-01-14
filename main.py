@@ -60,7 +60,7 @@ class pipeline:
         if self.mode == OutputType.Edges:
             return np.dstack((self.edges*255, self.edges*255, self.edges*255))
         if self.mode == OutputType.Histogram:
-            result = np.zeros((config.IMAGE_HEIGHT, config.IMAGE_WIDTH, 3))
+            result = np.dstack((self.edges*255, self.edges*255, self.edges*255))
             return cv2.bitwise_or(result, self.binary.histogram)
         #find the lines based on the detected edges
         self.track.detect_lines(self.edges , self.histogram_data)
